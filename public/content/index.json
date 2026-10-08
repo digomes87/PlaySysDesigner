@@ -1,0 +1,33 @@
+{
+  "concepts": [
+    { "id": "horizontal-scaling", "name": { "pt-BR": "Escala horizontal", "en": "Horizontal scaling" } },
+    { "id": "load-balancing", "name": { "pt-BR": "Balanceamento de carga", "en": "Load balancing" } },
+    { "id": "caching", "name": { "pt-BR": "Cache", "en": "Caching" } },
+    { "id": "read-replicas", "name": { "pt-BR": "Réplicas de leitura", "en": "Read replicas" } },
+    { "id": "replication-lag", "name": { "pt-BR": "Lag de replicação", "en": "Replication lag" } },
+    { "id": "async-queue", "name": { "pt-BR": "Fila assíncrona", "en": "Async queue" } },
+    { "id": "rate-limiting", "name": { "pt-BR": "Rate limiting", "en": "Rate limiting" } }
+  ],
+  "levels": [
+    {
+      "id": "level-01",
+      "title": { "pt-BR": "Um servidor não basta", "en": "One server is not enough" },
+      "file": "levels/level-01.json"
+    },
+    {
+      "id": "level-02",
+      "title": { "pt-BR": "O banco está derretendo", "en": "The database is melting" },
+      "file": "levels/level-02.json"
+    },
+    {
+      "id": "level-03",
+      "title": { "pt-BR": "Black Friday", "en": "Black Friday" },
+      "file": "levels/level-03.json"
+    },
+    {
+      "id": "level-04",
+      "title": { "pt-BR": "Revisão", "en": "Review" },
+      "file": "levels/level-04.json"
+    }
+  ]
+}
