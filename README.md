@@ -4,6 +4,8 @@ Jogo de system design no estilo tower defense. O jogador monta uma arquitetura, 
 
 Não é ferramenta de produção nem simulador de capacidade.
 
+**Abrir:** https://digomes87.github.io/PlaySysDesigner/ (por enquanto só uma página provisória)
+
 ## Estado do projeto
 
 Em construção. O que já existe é o motor de simulação, sem interface.
@@ -14,7 +16,7 @@ Em construção. O que já existe é o motor de simulação, sem interface.
 | Schema das fases (zod) + conteúdo das 4 fases | A fazer |
 | Progresso, domínio por conceito e repetição espaçada | A fazer |
 | Interface: tabuleiro, simulação animada, telas do loop | A fazer |
-| Deploy no GitHub Pages | A fazer |
+| Deploy no GitHub Pages | Pronto |
 
 Por enquanto `npm run dev` abre só uma página provisória. O que dá para exercitar é o motor, pelos testes.
 
@@ -29,6 +31,12 @@ npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + build de produção em dist/
 npm run dev        # http://localhost:5173/PlaySysDesigner/
 ```
+
+## Como publicar
+
+O workflow `.github/workflows/deploy.yml` roda os testes, faz o build e publica no GitHub Pages a cada push na `main`.
+
+O `base` do Vite vem de `VITE_BASE`, que o workflow define como `/<nome-do-repo>/`. Para publicar em outro caminho, rode `VITE_BASE=/ npm run build`.
 
 ## O loop de cada fase
 
