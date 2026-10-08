@@ -55,6 +55,7 @@ export interface Messages {
     readonly deleteHint: string;
     readonly notFound: string;
     readonly lockedLevel: string;
+    readonly lastRun: (metric: string, seconds: string) => string;
     readonly boardIssues: Readonly<Record<string, string>>;
     readonly stages: Readonly<Record<'predict' | 'build' | 'run' | 'diagnose' | 'justify', string>>;
   };
@@ -183,6 +184,7 @@ export const ptBR: Messages = {
     deleteHint: 'Selecione uma peça ou ligação e aperte Delete para remover.',
     notFound: 'Fase não encontrada.',
     lockedLevel: 'Esta fase ainda está trancada.',
+    lastRun: (metric, seconds) => `Última rodada: ${metric} violou o limite aos ${seconds}s. Ajuste o tabuleiro e rode de novo.`,
     boardIssues: {
       missing_source: 'O tabuleiro precisa de uma origem de tráfego.',
       unknown_node: 'Há uma ligação para uma peça que não existe.',
@@ -220,7 +222,7 @@ export const ptBR: Messages = {
     incorrect: 'Errado',
     rightAnswer: 'Resposta certa',
     toBuild: 'Ir para o tabuleiro',
-    backToBuild: 'Voltar ao tabuleiro',
+    backToBuild: 'Ajustar a arquitetura →',
     finish: 'Concluir fase',
     failedTitle: 'A arquitetura não cumpriu os requisitos',
     failedLead: 'Olhe o placar antes de responder. A explicação só aparece depois.',

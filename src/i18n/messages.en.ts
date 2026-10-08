@@ -59,6 +59,7 @@ export const en: Messages = {
     deleteHint: 'Select a piece or a connection and press Delete to remove it.',
     notFound: 'Level not found.',
     lockedLevel: 'This level is still locked.',
+    lastRun: (metric, seconds) => `Last run: ${metric} went over the limit at ${seconds}s. Adjust the board and run again.`,
     boardIssues: {
       missing_source: 'The board needs a traffic source.',
       unknown_node: 'There is a connection to a piece that does not exist.',
@@ -96,7 +97,7 @@ export const en: Messages = {
     incorrect: 'Incorrect',
     rightAnswer: 'Right answer',
     toBuild: 'Go to the board',
-    backToBuild: 'Back to the board',
+    backToBuild: 'Adjust the architecture →',
     finish: 'Complete level',
     failedTitle: 'The architecture did not meet the requirements',
     failedLead: 'Read the scoreboard before answering. The explanation only shows up afterwards.',

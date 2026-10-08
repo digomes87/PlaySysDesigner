@@ -39,7 +39,7 @@ Cada fase segue cinco passos, nesta ordem. Só o terceiro é simulação; os out
 4. **Diagnosticar** — se falhou, o jogo não explica: mostra as métricas e pergunta a causa. A explicação só vem depois da resposta.
 5. **Justificar** — se venceu, pergunta por que funcionou. Pega quem acertou por tentativa e erro.
 
-Cada pergunta é ligada a um conceito e alimenta a repetição espaçada.
+Cada pergunta é ligada a um conceito e alimenta a repetição espaçada. Cada etapa tem um banco de perguntas e mostra a que você viu há mais tempo: errar e tentar de novo traz uma pergunta diferente, em vez de deixar decorar a resposta.
 
 ## Fases
 

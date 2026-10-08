@@ -3,6 +3,11 @@
   gap: var(--space-4);
 }
 
+.question__lead {
+  font-size: var(--text-sm);
+  color: var(--color-ink-soft);
+}
+
 .question__prompt {
   font-size: var(--text-lg);
   max-width: 46ch;
@@ -52,10 +57,6 @@
 .question__option.is-wrong {
   border-color: var(--color-critical);
   background: rgb(208 59 59 / 12%);
-}
-
-.question__option.is-muted {
-  opacity: 0.5;
 }
 
 .question__letter {
