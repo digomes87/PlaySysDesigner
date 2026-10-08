@@ -1,157 +1,174 @@
 # PlaySysDesigner
 
-Jogo de system design no estilo tower defense. O jogador monta uma arquitetura, roda tráfego simulado em cima dela e vê o que quebra. O objetivo é **fixar conceitos**, não simular com precisão: toda mecânica existe para obrigar o jogador a lembrar ou raciocinar, e a simulação só é fiel até o ponto em que o conceito fica visível.
+*[Português](README.pt-BR.md)*
 
-Não é ferramenta de produção nem simulador de capacidade.
+A system design game in the spirit of tower defense. You build an architecture, run simulated traffic through it and watch what breaks. The goal is to **make concepts stick**, not to simulate accurately: every mechanic exists to force you to recall or reason, and the simulation is only as faithful as it needs to be for the concept to become visible.
 
-**Abrir:** https://digomes87.github.io/PlaySysDesigner/ (por enquanto só uma página provisória)
+It is not a production tool or a capacity simulator.
 
-## Estado do projeto
+**Play:** https://digomes87.github.io/PlaySysDesigner/
 
-Em construção. O que já existe é o motor de simulação, sem interface.
+The game is available in English and Portuguese; switch languages in the header.
 
-| Etapa | Estado |
-|-------|--------|
-| Motor de simulação headless + testes | Pronto |
-| Schema das fases (zod) + conteúdo das 4 fases | A fazer |
-| Progresso, domínio por conceito e repetição espaçada | A fazer |
-| Interface: tabuleiro, simulação animada, telas do loop | A fazer |
-| Deploy no GitHub Pages | Pronto |
+## Running it
 
-Por enquanto `npm run dev` abre só uma página provisória. O que dá para exercitar é o motor, pelos testes.
-
-## Como rodar
-
-Requer Node 22+.
+Requires Node 22+.
 
 ```bash
 npm install
-npm test           # testes do motor (Vitest)
-npm run typecheck  # tsc --noEmit
-npm run build      # typecheck + build de produção em dist/
 npm run dev        # http://localhost:5173/PlaySysDesigner/
+npm test           # engine, content and progress tests (Vitest)
+npm run typecheck  # tsc --noEmit
+npm run build      # typecheck + production build in dist/
+npm run preview    # serve the build
 ```
 
-## Como publicar
+## Publishing
 
-O workflow `.github/workflows/deploy.yml` roda os testes, faz o build e publica no GitHub Pages a cada push na `main`.
+The workflow in `.github/workflows/deploy.yml` runs the tests, builds and publishes to GitHub Pages on every push to `main`.
 
-O `base` do Vite vem de `VITE_BASE`, que o workflow define como `/<nome-do-repo>/`. Para publicar em outro caminho, rode `VITE_BASE=/ npm run build`.
+Vite's `base` comes from `VITE_BASE`, which the workflow sets to `/<repo-name>/`. To publish under another path, run `VITE_BASE=/ npm run build`. Routes use `HashRouter`, so no `404.html` is needed.
 
-## O loop de cada fase
+## The loop of each level
 
-Cada fase segue cinco passos, nesta ordem. Só o terceiro é simulação; os outros são perguntas, porque é respondendo que o conceito fixa.
+Every level follows five steps, in this order. Only the third one is simulation; the others are questions, because answering is what makes a concept stick.
 
-1. **Prever** — o jogador vê o sistema inicial e responde o que quebra primeiro.
-2. **Montar** — arrasta componentes e conexões no tabuleiro.
-3. **Rodar** — o tráfego passa pela arquitetura; um painel mostra as métricas.
-4. **Diagnosticar** — se falhou, o jogo não explica: mostra as métricas e pergunta a causa. A explicação só vem depois da resposta.
-5. **Justificar** — se venceu, pergunta por que funcionou. Pega quem acertou por tentativa e erro.
+1. **Predict** — you see the starting system and say what breaks first.
+2. **Build** — drag components and connections onto the board.
+3. **Run** — traffic flows through the architecture; a scoreboard shows the metrics.
+4. **Diagnose** — if it failed, the game does not explain: it shows the metrics and asks for the cause. The explanation only comes after the answer.
+5. **Justify** — if it passed, it asks why it worked. This catches wins by trial and error.
 
-Cada pergunta é ligada a um conceito e alimenta a repetição espaçada.
+Every question is tied to a concept and feeds spaced repetition.
 
-## Arquitetura
+## Levels
 
-O projeto reaproveita a arquitetura do [PlayKids](https://github.com/digomes87/PlayKids): motor em TypeScript puro, conteúdo em JSON validado por schema, um renderer por tipo e progresso atrás de uma interface de repositório.
+1. **One server is not enough** — horizontal scaling and load balancing.
+2. **The database is melting** — caching, read replicas and replication lag.
+3. **Black Friday** — async queue and rate limiting.
+4. **Review** — all of it in a different system, with no labels and no hints. It only unlocks one day after level 3.
+
+## Architecture
+
+The project reuses the architecture of [PlayKids](https://github.com/digomes87/PlayKids): an engine in plain TypeScript, content as schema-validated JSON, one renderer per type, and progress behind a repository interface.
 
 ```
 src/
-  engine/       Motor em TypeScript puro: ticks, roteamento, capacidade, métricas, SLOs.
-                Sem React e sem DOM.
-    components/ Um comportamento por tipo de componente + o mapa tipo -> comportamento.
-    events/     Um handler por tipo de evento + o mapa tipo -> handler.
-  app/          Shell da aplicação (provisório).
+  engine/       Plain TypeScript engine: ticks, routing, capacity, metrics, SLOs.
+                No React, no DOM.
+    components/ One behavior per component type + the type -> behavior map.
+    events/     One handler per event type + the type -> handler map.
+  content/      zod schema for levels, loading, and board operations.
+  progress/     ProgressRepository interface, IndexedDB implementation,
+                spaced repetition, level unlocking, JSON export/import.
+  i18n/         Locales and the typed interface dictionaries (pt-BR, en).
+  renderers/    Glyph and spec lines per component type + the typed map.
+  board/        Board canvas (@xyflow/react), nodes, traffic particles, palette.
+  game/         Loop state machine, simulation runner, scoreboard, level screen.
+  loop/         Question step shared by predict, diagnose and justify.
+  home/         Level list.
+  review/       Progress screen: concepts, overdue reviews, your data.
+  app/          Shell: routes, header, language switch.
+public/content/ index.json and one JSON file per level.
 ```
 
-Pastas previstas para as próximas etapas: `content/` (schema e carregamento das fases), `progress/` (repositório IndexedDB e repetição espaçada), `renderers/`, `board/`, `game/`, `loop/`, `home/` e `review/`.
+Constraints, the same as PlayKids: a 100% static site, no backend, no analytics, no third-party SDKs and no CDN. Fonts are bundled with the site. Progress stays on the device.
 
-Restrições, iguais às do PlayKids: site 100% estático, sem backend, sem analytics, sem SDKs de terceiros e sem CDN. O progresso fica só no aparelho.
+## The engine
 
-## O motor
+- **Discrete time**: one tick is 100 ms.
+- **Deterministic**: the PRNG (mulberry32) takes the level's seed. Same seed and same board give the same run, tick by tick.
+- **Headless**: `runToEnd(config)` runs a whole match and returns the result; `createSimulation(config).step()` advances one tick and returns the snapshot the interface animates.
 
-- **Tempo discreto**: um tick vale 100 ms.
-- **Determinístico**: o PRNG (mulberry32) recebe a seed da fase. Mesma seed e mesmo tabuleiro dão a mesma partida, tick a tick.
-- **Headless**: `runToEnd(config)` roda a partida inteira e devolve o resultado; `createSimulation(config).step()` avança um tick e devolve o retrato que a interface vai animar.
+### Components
 
-### Componentes
+Every component has `capacityRps`, `baseLatencyMs`, `costTier` and `bufferSize`, plus parameters specific to its type.
 
-Cada componente tem `capacityRps`, `baseLatencyMs`, `costTier` e `bufferSize`, mais parâmetros próprios do tipo.
+| Type | What it does |
+|------|--------------|
+| `traffic_source` | Origin of the requests. It has a single output. |
+| `load_balancer` | Splits traffic across equal outputs. |
+| `app_server` | Processes and forwards to the data tier. |
+| `cache` | Answers reads with probability `hitRate`; a miss goes on to the database. |
+| `db_primary` | Stores writes and answers reads that are always fresh. |
+| `db_replica` | Read only; it lags `replicationLagMs` behind the primary. |
+| `queue` | Confirms the write to the client right away and holds the job. |
+| `worker` | Takes jobs from the queue to the database, at its own capacity. |
+| `rate_limiter` | Lets through up to `limitRps` of bots and drops the rest. |
 
-| Tipo | O que faz |
-|------|-----------|
-| `traffic_source` | Origem das requisições. |
-| `load_balancer` | Reparte o tráfego entre saídas iguais. |
-| `app_server` | Processa e encaminha para a camada de dados. |
-| `cache` | Responde leituras com probabilidade `hitRate`; o miss segue para o banco. |
-| `db_primary` | Grava escritas e responde leituras sempre atualizadas. |
-| `db_replica` | Só leitura; fica `replicationLagMs` atrás do primário. |
-| `queue` | Confirma a escrita ao cliente na hora e guarda o trabalho. |
-| `worker` | Tira trabalhos da fila e leva ao banco, no ritmo da própria capacidade. |
-| `rate_limiter` | Deixa passar até `limitRps` de bots e descarta o resto. |
+### Capacity and latency
 
-### Capacidade e latência
+A component's latency is `base / (1 - utilization)`, capped at 20 times the base. The utilization used is the previous tick's. When demand exceeds capacity, the excess waits in the buffer up to `bufferSize`; whatever does not fit is dropped and counts as an error.
 
-A latência de um componente é `base / (1 - utilização)`, limitada a 20 vezes a base. A utilização usada é a do tick anterior. Quando a demanda passa da capacidade, o excedente espera no buffer até `bufferSize`; o que não cabe é descartado e conta como erro.
+### Routing
 
-### Roteamento
+Connections have no named ports. When forwarding a request, a node looks at the outputs that accept that kind, keeps the highest-priority group and round-robins only inside it:
 
-As conexões não têm portas nomeadas. Ao encaminhar uma requisição, o nó olha as saídas que aceitam aquele tipo, fica com o grupo de maior prioridade e reveza (round-robin) só dentro dele:
+- **Reads**: cache > replica > primary.
+- **Writes**: queue > primary.
 
-- **Leitura**: cache > réplica > primário.
-- **Escrita**: fila > primário.
+So an app server wired to a cache and to a primary sends every read to the cache, not half to each. If the preferred node is down, traffic falls to the next group.
 
-Assim, um app server ligado a um cache e a um primário manda todas as leituras para o cache, e não metade para cada. Se o nó preferido está fora do ar, o tráfego cai para o próximo grupo.
+### Request kinds
 
-### Tipos de requisição
+`read`, `write` and `bot`, in the proportion the level defines. Bots consume capacity and always pierce the cache, but they do not count toward error rate or latency.
 
-`read`, `write` e `bot`, na proporção definida pela fase. Bots consomem capacidade e sempre furam o cache, mas não entram na taxa de erro nem na latência.
+### Metrics
 
-### Métricas
+| Metric | Meaning |
+|--------|---------|
+| `p99LatencyMs` | 99th percentile latency. |
+| `errorRate` | Fraction of legitimate requests that failed. |
+| `availability` | Fraction of seconds with an error rate of at most 5%. |
+| `costTier` | Cost tier of the board (`low`, `mid`, `high`). |
+| `staleReads` | Reads served by a replica inside the lag window after a write to the same key. |
+| `duplicateOps` | Writes stored more than once (a retry of an operation that had already been stored). |
+| `lostWrites` | Writes that were dropped, or confirmed to the client and lost afterwards. |
 
-| Métrica | Significado |
-|---------|-------------|
-| `p99LatencyMs` | Latência do percentil 99. |
-| `errorRate` | Fração das requisições legítimas que falharam. |
-| `availability` | Fração dos segundos com taxa de erro de até 5%. |
-| `costTier` | Faixa de custo do tabuleiro (`low`, `mid`, `high`). |
-| `staleReads` | Leituras feitas numa réplica dentro da janela de lag após uma escrita na mesma chave. |
-| `duplicateOps` | Escritas gravadas mais de uma vez (retry de uma operação que já tinha sido gravada). |
-| `lostWrites` | Escritas descartadas, ou confirmadas ao cliente e perdidas depois. |
+Each level defines SLOs over these metrics. You win by meeting all of them for the whole run: `p99LatencyMs` and `errorRate` are evaluated over a 5-second sliding window, once it holds at least 10 answers; the others are cumulative.
 
-Cada fase define SLOs sobre essas métricas. Vence quem cumpre todos durante a partida inteira: `p99LatencyMs` e `errorRate` são avaliados numa janela deslizante de 5 segundos; as demais são acumuladas.
+### Events
 
-### Eventos
+Events are scheduled by time and act on traffic or on nodes.
 
-Eventos são agendados por tempo e mexem no tráfego ou nos nós.
+| Event | Effect |
+|-------|--------|
+| `traffic_ramp` | Takes traffic to `toRps` linearly. |
+| `traffic_spike` | Multiplies traffic for a while. |
+| `bot_wave` | Adds bot traffic for a while. |
+| `node_failure` | Takes nodes down; whatever sat in their buffer is lost. |
+| `network_partition` | Cuts the link between two nodes. |
+| `client_retry` | Clients resend what failed or took too long, with the same `opId`. |
+| `disk_failure` | The node goes down and loses what it stored. |
+| `cache_flush` | Empties the cache, which warms up gradually. |
 
-| Evento | Efeito |
-|--------|--------|
-| `traffic_ramp` | Leva o tráfego até `toRps` de forma linear. |
-| `traffic_spike` | Multiplica o tráfego por um período. |
-| `bot_wave` | Soma tráfego de bot por um período. |
-| `node_failure` | Tira nós do ar; o que estava no buffer se perde. |
-| `network_partition` | Corta a ligação entre dois nós. |
-| `client_retry` | O cliente reenvia o que falhou ou demorou demais, com o mesmo `opId`. |
-| `disk_failure` | O nó sai do ar e perde o que guardava. |
-| `cache_flush` | Esvazia o cache, que reaquece aos poucos. |
+## Spaced repetition
 
-## Como adicionar um componente
+Progress is derived from the log of answers, never stored as a score.
 
-O motor trata o tipo de componente como dado: o núcleo cuida de capacidade, buffer, latência e roteamento, e não conhece nenhum tipo pelo nome.
+- Per concept: `new`, `practicing` or `mastered`, plus the date of the next review.
+- Review intervals are 1, 3, 7 and 16 days. A correct answer advances one interval, but only when the review is due; a wrong one goes back to 1 day.
+- A concept is `mastered` after correct answers in at least two different levels, with at least 3 days between the first correct answer and the one in the other level. A later wrong answer takes the mastery away until the concept is answered correctly again.
 
-1. Inclua o tipo em `COMPONENT_TYPES` (`src/engine/types.ts`).
-2. Crie `src/engine/components/<tipo>.ts` exportando um `ComponentBehavior`: a prioridade de roteamento, o que o componente aceita e o que faz com cada requisição (`forward`, `respond`, `ack` ou `drop`).
-3. Registre em `BEHAVIORS` (`src/engine/components/registry.ts`). O mapa é tipado por `ComponentType`: enquanto o comportamento não for registrado, o projeto não compila.
+The measure of success is delayed retention, not stars.
 
-Eventos seguem o mesmo padrão, com `SIM_EVENT_TYPES` e `EVENT_HANDLERS` (`src/engine/events/registry.ts`).
+## Adding a level
 
-## Fases previstas
+1. Create `public/content/levels/<id>.json` following `levelSchema` (`src/content/schema.ts`). Every player-facing string is an object with `pt-BR` and `en`.
+2. Register it in `public/content/index.json`.
+3. Add a reference solution, and the tempting shortcuts the level must reject, in `src/content/referenceSolutions.ts`.
+4. Run `npm test`. A test validates all published content against the schema and runs each level headless: the starting board must fail, the reference solution must pass, and each shortcut must fail on the metric it is meant to teach.
 
-1. **Um servidor não basta** — escala horizontal e balanceamento de carga.
-2. **O banco está derretendo** — cache, réplicas de leitura e lag de replicação.
-3. **Black Friday** — fila assíncrona e rate limiting.
-4. **Revisão** — mistura tudo num sistema diferente, sem rótulos e sem dicas. Só libera um dia depois da fase 3.
+## Adding a component
+
+The engine treats the component type as data: the core handles capacity, buffer, latency and routing, and knows no type by name.
+
+1. Add the type to `COMPONENT_TYPES` (`src/engine/types.ts`).
+2. Create `src/engine/components/<type>.ts` exporting a `ComponentBehavior`: its routing priority, what it accepts and what it does with each request (`forward`, `respond`, `ack` or `drop`).
+3. Register it in `BEHAVIORS` (`src/engine/components/registry.ts`) and in `RENDERERS` (`src/renderers/registry.tsx`), and name it in both dictionaries under `src/i18n/`. All three maps are typed by `ComponentType`: until the new type is registered everywhere, the project does not compile.
+
+Events follow the same pattern, with `SIM_EVENT_TYPES`, `EVENT_HANDLERS` (`src/engine/events/registry.ts`) and the parameter schema in `eventSchema`.
 
 ## Stack
 
-Vite, React, TypeScript, Zustand, zod, Vitest e @xyflow/react.
+Vite, React, TypeScript, Zustand, zod, Vitest and @xyflow/react.

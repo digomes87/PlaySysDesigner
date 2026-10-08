@@ -1,0 +1,73 @@
+/*
+ * Direção visual: planta de engenharia numa sala de controle. Fundo azul-noite com
+ * grade, traços finos, números em fonte monoespaçada e um único amarelo de sinal
+ * para a ação principal.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Superfícies */
+  --color-plane: #080d18;
+  --color-surface: #0f1626;
+  --color-surface-raised: #152037;
+  --color-surface-sunken: #0a101d;
+  --color-line: #233352;
+  --color-line-strong: #34497a;
+  --color-grid: rgb(120 160 255 / 7%);
+
+  /* Tinta */
+  --color-ink: #eef3fb;
+  --color-ink-soft: #b4c2da;
+  --color-ink-muted: #7f90ae;
+
+  /* Ação */
+  --color-signal: #f5d547;
+  --color-signal-ink: #1a1503;
+  --color-focus: #9fd0ff;
+
+  /* Tipos de requisição (categórico; validado contra a superfície escura) */
+  --color-read: #3987e5;
+  --color-write: #c98500;
+  --color-bot: #d55181;
+
+  /* Estado (reservado: nunca vira cor de série) */
+  --color-good: #0ca30c;
+  --color-good-ink: #6fdc6f;
+  --color-critical: #d03b3b;
+  --color-critical-ink: #ff8f8f;
+  --color-warning: #fab219;
+
+  /* Tipografia */
+  --font-display: 'Space Grotesk Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+  --text-hero: clamp(2.5rem, 1.4rem + 4.2vw, 5.25rem);
+
+  /* Espaço */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+
+  /* Forma */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --shadow-raised: 0 1px 0 rgb(255 255 255 / 4%) inset, 0 18px 40px -22px rgb(0 0 0 / 80%);
+  --shadow-signal: 0 0 0 1px rgb(245 213 71 / 40%), 0 10px 30px -12px rgb(245 213 71 / 45%);
+
+  /* Movimento */
+  --duration-fast: 140ms;
+  --duration-normal: 280ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --header-height: 3.5rem;
+}
