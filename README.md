@@ -39,7 +39,7 @@ Every level follows five steps, in this order. Only the third one is simulation;
 4. **Diagnose** — if it failed, the game does not explain: it shows the metrics and asks for the cause. The explanation only comes after the answer.
 5. **Justify** — if it passed, it asks why it worked. This catches wins by trial and error.
 
-Every question is tied to a concept and feeds spaced repetition.
+Every question is tied to a concept and feeds spaced repetition. Each step draws from a pool of questions and shows the one you saw longest ago, so failing and trying again brings a different question instead of letting you memorize the answer.
 
 ## Levels
 

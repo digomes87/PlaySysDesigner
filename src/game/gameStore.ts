@@ -3,6 +3,8 @@ import { addNode, connect, disconnect, moveNode, nodeFromPalette, removeNode, ty
 import type { Level, PaletteItem, Question } from '../content/schema';
 import { validateBoard, type BoardIssueCode } from '../engine/boardRules';
 import type { Board, SimResult } from '../engine/types';
+import { pickQuestion } from '../loop/pickQuestion';
+import type { Answer } from '../progress/types';
 
 export type Stage = 'predict' | 'build' | 'run' | 'diagnose' | 'justify' | 'complete';
 
@@ -11,14 +13,17 @@ interface GameState {
   readonly board: Board;
   readonly stage: Stage;
   readonly result: SimResult | null;
+  /** Pergunta da etapa atual, escolhida ao entrar nela para não trocar depois da resposta. */
+  readonly question: Question | null;
   readonly hintsShown: number;
   /** Última regra de montagem violada, para avisar o jogador. */
   readonly notice: BoardIssueCode | null;
   /** Quantas vezes o diagnóstico já apareceu: muda a ordem das opções a cada vez. */
   readonly attempt: number;
-  begin(level: Level): void;
+  /** `answers` é o histórico do jogador: decide qual pergunta de cada banco aparece. */
+  begin(level: Level, answers: readonly Answer[]): void;
   goTo(stage: Stage): void;
-  finishRun(result: SimResult): void;
+  finishRun(result: SimResult, answers: readonly Answer[]): void;
   place(item: PaletteItem, position: Position): void;
   remove(nodeId: string): void;
   move(nodeId: string, position: Position): void;
@@ -38,37 +43,43 @@ function nextNodeId(board: Board, paletteId: string): string {
   return `${paletteId}-${sequence}`;
 }
 
-/** A pergunta de diagnóstico da métrica que violou primeiro. */
-export function diagnoseQuestionFor(level: Level, result: SimResult | null): Question | null {
-  const metric = result?.firstViolation?.metric;
-  return metric ? (level.diagnoseQuestions[metric] ?? null) : null;
-}
-
 /** Máquina do loop de uma fase: prever -> montar -> rodar -> diagnosticar | justificar. */
 export const useGameStore = create<GameState>((set, get) => ({
   level: null,
   board: EMPTY_BOARD,
   stage: 'predict',
   result: null,
+  question: null,
   hintsShown: 0,
   notice: null,
   attempt: 0,
 
-  begin(level) {
-    set({ level, board: level.initialBoard, stage: 'predict', result: null, hintsShown: 0, notice: null, attempt: 0 });
+  begin(level, answers) {
+    set({
+      level,
+      board: level.initialBoard,
+      stage: 'predict',
+      result: null,
+      question: pickQuestion(level.predictQuestions, answers),
+      hintsShown: 0,
+      notice: null,
+      attempt: 0,
+    });
   },
   goTo(stage) {
     set({ stage, notice: null });
   },
-  finishRun(result) {
+  finishRun(result, answers) {
     const { level, attempt } = get();
     if (!level) return;
     if (result.passed) {
-      set({ result, stage: 'justify' });
+      set({ result, stage: 'justify', question: pickQuestion(level.justifyQuestions, answers) });
       return;
     }
-    const hasQuestion = diagnoseQuestionFor(level, result) !== null;
-    set({ result, stage: hasQuestion ? 'diagnose' : 'build', attempt: attempt + 1 });
+    // A pergunta vem do banco da métrica que violou primeiro.
+    const metric = result.firstViolation?.metric;
+    const question = metric ? pickQuestion(level.diagnoseQuestions[metric] ?? [], answers) : null;
+    set({ result, question, stage: question ? 'diagnose' : 'build', attempt: attempt + 1 });
   },
   place(item, position) {
     const { board, level } = get();

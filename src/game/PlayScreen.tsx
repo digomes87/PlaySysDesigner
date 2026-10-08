@@ -12,7 +12,7 @@ import { useProgressStore } from '../progress/progressStore';
 import { systemClock } from '../progress/types';
 import { levelAccess } from '../progress/unlock';
 import { Briefing } from './Briefing';
-import { diagnoseQuestionFor, useGameStore, type Stage } from './gameStore';
+import { useGameStore, type Stage } from './gameStore';
 import { MetricsPanel } from './MetricsPanel';
 import { RunBar } from './RunBar';
 import { useRunStore } from './runStore';
@@ -36,8 +36,9 @@ function Stepper({ stage }: { readonly stage: Stage }) {
 }
 
 function BuildBar({ level }: { readonly level: Level }) {
-  const { m } = useI18n();
+  const { m, number } = useI18n();
   const notice = useGameStore((state) => state.notice);
+  const lastViolation = useGameStore((state) => (state.result?.passed === false ? state.result.firstViolation : null));
   const { goTo, finishRun, resetBoard } = useGameStore.getState();
 
   function run(): void {
@@ -49,7 +50,9 @@ function BuildBar({ level }: { readonly level: Level }) {
     }
     goTo('run');
     void useProgressStore.getState().recordRun(level.id);
-    useRunStore.getState().start(buildSimConfig(level, board), finishRun);
+    useRunStore
+      .getState()
+      .start(buildSimConfig(level, board), (result) => finishRun(result, useProgressStore.getState().answers));
   }
 
   function reset(): void {
@@ -58,10 +61,16 @@ function BuildBar({ level }: { readonly level: Level }) {
 
   return (
     <div className="buildbar">
-      {notice && (
+      {notice ? (
         <p className="buildbar__notice" role="alert">
           {m.play.boardIssues[notice]}
         </p>
+      ) : (
+        lastViolation && (
+          <p className="buildbar__last">
+            {m.play.lastRun(m.metrics.names[lastViolation.metric], number(lastViolation.atSec, 1))}
+          </p>
+        )
       )}
       <button type="button" className="button button--ghost" onClick={reset}>
         ↺ {m.play.reset}
@@ -109,7 +118,7 @@ interface DockProps {
 function Dock({ level, levels }: DockProps) {
   const { m } = useI18n();
   const stage = useGameStore((state) => state.stage);
-  const result = useGameStore((state) => state.result);
+  const question = useGameStore((state) => state.question);
   const attempt = useGameStore((state) => state.attempt);
   const { goTo } = useGameStore.getState();
 
@@ -123,12 +132,14 @@ function Dock({ level, levels }: DockProps) {
     );
   }
 
+  if (!question) return <BuildBar level={level} />;
+
   if (stage === 'predict') {
     return (
       <div className="dock panel">
         <QuestionStep
-          key={level.predictQuestion.id}
-          question={level.predictQuestion}
+          key={question.id}
+          question={question}
           stage="predict"
           levelId={level.id}
           shuffleKey={level.id}
@@ -141,21 +152,16 @@ function Dock({ level, levels }: DockProps) {
   }
 
   if (stage === 'diagnose') {
-    const question = diagnoseQuestionFor(level, result);
-    if (!question) return <BuildBar level={level} />;
     return (
       <div className="dock panel dock--failed">
-        <header className="dock__verdict">
-          <h2>✕ {m.question.failedTitle}</h2>
-          <p>{m.question.failedLead}</p>
-        </header>
         <QuestionStep
           key={`${question.id}-${attempt}`}
           question={question}
           stage="diagnose"
           levelId={level.id}
           shuffleKey={String(attempt)}
-          eyebrow={m.question.diagnose}
+          eyebrow={`✕ ${m.question.failedTitle}`}
+          lead={m.question.failedLead}
           continueLabel={m.question.backToBuild}
           onContinue={() => goTo('build')}
         />
@@ -165,17 +171,14 @@ function Dock({ level, levels }: DockProps) {
 
   return (
     <div className="dock panel dock--passed">
-      <header className="dock__verdict">
-        <h2>✓ {m.question.passedTitle}</h2>
-        <p>{m.question.passedLead}</p>
-      </header>
       <QuestionStep
-        key={level.justifyQuestion.id}
-        question={level.justifyQuestion}
+        key={question.id}
+        question={question}
         stage="justify"
         levelId={level.id}
         shuffleKey={`justify-${attempt}`}
-        eyebrow={m.question.justify}
+        eyebrow={`✓ ${m.question.passedTitle}`}
+        lead={m.question.passedLead}
         continueLabel={m.question.finish}
         onContinue={() => {
           void useProgressStore.getState().completeLevel(level.id);
@@ -192,7 +195,7 @@ function Session({ level, levels, index }: { readonly level: Level; readonly lev
 
   useEffect(() => {
     useRunStore.getState().clear();
-    useGameStore.getState().begin(level);
+    useGameStore.getState().begin(level, useProgressStore.getState().answers);
     return () => useRunStore.getState().clear();
   }, [level]);
 

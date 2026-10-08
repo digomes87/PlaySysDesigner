@@ -18,12 +18,17 @@
 .play__stage {
   position: relative;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(160px, 1fr) auto;
   gap: var(--space-3);
   min-height: 0;
 }
 
 .play__board {
+  min-height: 0;
+}
+
+/* Dentro da tela da fase quem manda na altura é o grid: o tabuleiro encolhe para a pergunta caber. */
+.play__board .board {
   min-height: 0;
 }
 
@@ -120,6 +125,15 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
+}
+
+.buildbar__last {
+  margin-right: auto;
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--color-critical);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+  color: var(--color-ink-soft);
 }
 
 .buildbar__notice {
@@ -234,7 +248,7 @@
 .dock {
   display: grid;
   gap: var(--space-4);
-  max-height: 62vh;
+  max-height: 58vh;
   padding: var(--space-5);
   overflow-y: auto;
   animation: dock-in var(--duration-normal) var(--ease-out);
@@ -246,20 +260,6 @@
 
 .dock--passed {
   border-color: rgb(12 163 12 / 55%);
-}
-
-.dock__verdict {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.dock__verdict h2 {
-  font-size: var(--text-lg);
-}
-
-.dock__verdict p {
-  font-size: var(--text-sm);
-  color: var(--color-ink-soft);
 }
 
 .complete {

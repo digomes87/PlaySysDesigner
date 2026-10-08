@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Question } from '../content/schema';
 import { useI18n } from '../i18n/useI18n';
 import { useProgressStore } from '../progress/progressStore';
@@ -13,6 +13,8 @@ interface QuestionStepProps {
   /** Muda a ordem das opções; use um valor novo a cada vez que a pergunta reaparece. */
   readonly shuffleKey: string;
   readonly eyebrow: string;
+  /** Frase de contexto acima da pergunta; some depois da resposta para dar lugar à explicação. */
+  readonly lead?: string;
   readonly continueLabel: string;
   onContinue(): void;
 }
@@ -23,13 +25,23 @@ const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
  * Uma pergunta do loop. A explicação só aparece depois da resposta, e a resposta
  * é gravada na hora: é ela que alimenta o domínio do conceito.
  */
-export function QuestionStep({ question, stage, levelId, shuffleKey, eyebrow, continueLabel, onContinue }: QuestionStepProps) {
+export function QuestionStep(props: QuestionStepProps) {
+  const { question, stage, levelId, shuffleKey, eyebrow, lead, continueLabel, onContinue } = props;
   const { m, text } = useI18n();
   const recordAnswer = useProgressStore((state) => state.recordAnswer);
   const [selected, setSelected] = useState<string | null>(null);
   const options = useMemo(() => shuffled(question.options, `${question.id}:${shuffleKey}`), [question, shuffleKey]);
   const answered = selected !== null;
   const isCorrect = selected === question.correctOptionId;
+  const feedback = useRef<HTMLDivElement>(null);
+  // Depois da resposta só ficam a opção escolhida e a certa: sobra espaço para a explicação e o botão.
+  const visibleOptions = answered
+    ? options.filter((option) => option.id === selected || option.id === question.correctOptionId)
+    : options;
+
+  useEffect(() => {
+    if (answered) feedback.current?.scrollIntoView({ block: 'nearest' });
+  }, [answered]);
 
   function choose(optionId: string): void {
     if (answered) return;
@@ -47,13 +59,15 @@ export function QuestionStep({ question, stage, levelId, shuffleKey, eyebrow, co
   return (
     <section className="question" aria-labelledby={`question-${question.id}`}>
       <p className="eyebrow">{eyebrow}</p>
+      {lead && !answered && <p className="question__lead">{lead}</p>}
       <h2 id={`question-${question.id}`} className="question__prompt">
         {text(question.prompt)}
       </h2>
       <ol className="question__options">
-        {options.map((option, index) => {
+        {visibleOptions.map((option) => {
+          const index = options.indexOf(option);
           const isRight = option.id === question.correctOptionId;
-          const state = !answered ? '' : isRight ? ' is-right' : option.id === selected ? ' is-wrong' : ' is-muted';
+          const state = !answered ? '' : isRight ? ' is-right' : ' is-wrong';
           return (
             <li key={option.id}>
               <button type="button" className={`question__option${state}`} disabled={answered} onClick={() => choose(option.id)}>
@@ -67,7 +81,7 @@ export function QuestionStep({ question, stage, levelId, shuffleKey, eyebrow, co
         })}
       </ol>
       {answered && (
-        <div className={`question__feedback${isCorrect ? ' is-right' : ' is-wrong'}`} role="status">
+        <div ref={feedback} className={`question__feedback${isCorrect ? ' is-right' : ' is-wrong'}`} role="status">
           <p className="question__verdict">{isCorrect ? `✓ ${m.question.correct}` : `✕ ${m.question.incorrect}`}</p>
           <p>{text(question.explanation)}</p>
           <button type="button" className="button button--signal" onClick={onContinue} autoFocus>

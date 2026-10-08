@@ -272,229 +272,464 @@
       "en": "A replica takes a while to receive each write. Whoever reads in that interval sees the old value."
     }
   ],
-  "predictQuestion": {
-    "id": "l2-predict",
-    "conceptId": "read-replicas",
-    "prompt": {
-      "pt-BR": "O tráfego vai subir para 2000 rps, 90% leitura. O que quebra primeiro?",
-      "en": "Traffic will climb to 2000 rps, 90% reads. What breaks first?"
-    },
-    "options": [
-      {
-        "id": "db",
-        "text": {
-          "pt-BR": "O banco primário, que recebe todas as leituras e todas as escritas.",
-          "en": "The primary database, which takes every read and every write."
-        }
-      },
-      {
-        "id": "apps",
-        "text": {
-          "pt-BR": "Os servidores de aplicação.",
-          "en": "The app servers."
-        }
-      },
-      {
-        "id": "lb",
-        "text": {
-          "pt-BR": "O load balancer.",
-          "en": "The load balancer."
-        }
-      },
-      {
-        "id": "writes",
-        "text": {
-          "pt-BR": "Só as escritas falham; as leituras continuam passando.",
-          "en": "Only writes fail; reads keep going through."
-        }
-      }
-    ],
-    "correctOptionId": "db",
-    "explanation": {
-      "pt-BR": "Os dois servidores somam 3000 rps; o banco, 600. Ele satura primeiro e não distingue leitura de escrita: descarta as duas.",
-      "en": "The two servers add up to 3000 rps; the database, 600. It saturates first and does not tell reads from writes: it drops both."
-    }
-  },
-  "diagnoseQuestions": {
-    "p99LatencyMs": {
-      "id": "l2-diagnose-latency",
+  "predictQuestions": [
+    {
+      "id": "l2-predict",
       "conceptId": "read-replicas",
       "prompt": {
-        "pt-BR": "A latência p99 estourou o limite. Qual é a causa?",
-        "en": "p99 latency went over the limit. What is the cause?"
+        "pt-BR": "O tráfego vai subir para 2000 rps, 90% leitura. O que quebra primeiro?",
+        "en": "Traffic will climb to 2000 rps, 90% reads. What breaks first?"
       },
       "options": [
         {
-          "id": "db-util",
+          "id": "db",
           "text": {
-            "pt-BR": "Algum banco está perto de 100% de utilização: as leituras que chegam a ele são mais do que ele atende com folga.",
-            "en": "Some database is close to 100% utilization: more reads reach it than it can serve with headroom."
-          }
-        },
-        {
-          "id": "cache-slow",
-          "text": {
-            "pt-BR": "O cache acrescenta latência a toda leitura.",
-            "en": "The cache adds latency to every read."
+            "pt-BR": "O banco primário, que recebe todas as leituras e todas as escritas.",
+            "en": "The primary database, which takes every read and every write."
           }
         },
         {
           "id": "apps",
           "text": {
-            "pt-BR": "Faltam servidores de aplicação.",
-            "en": "There are not enough app servers."
+            "pt-BR": "Os servidores de aplicação.",
+            "en": "The app servers."
+          }
+        },
+        {
+          "id": "lb",
+          "text": {
+            "pt-BR": "O load balancer.",
+            "en": "The load balancer."
+          }
+        },
+        {
+          "id": "writes",
+          "text": {
+            "pt-BR": "Só as escritas falham; as leituras continuam passando.",
+            "en": "Only writes fail; reads keep going through."
           }
         }
       ],
-      "correctOptionId": "db-util",
+      "correctOptionId": "db",
       "explanation": {
-        "pt-BR": "Olhe a utilização de cada banco. Leituras se espalham por réplicas; cada réplica a mais baixa a utilização das outras.",
-        "en": "Check the utilization of each database. Reads spread across replicas; each extra replica lowers the utilization of the others."
+        "pt-BR": "Os dois servidores somam 3000 rps; o banco, 600. Ele satura primeiro e não distingue leitura de escrita: descarta as duas.",
+        "en": "The two servers add up to 3000 rps; the database, 600. It saturates first and does not tell reads from writes: it drops both."
       }
     },
-    "errorRate": {
-      "id": "l2-diagnose-errors",
-      "conceptId": "caching",
+    {
+      "id": "l2-predict-shared",
+      "conceptId": "read-replicas",
       "prompt": {
-        "pt-BR": "Requisições começaram a falhar. Qual é a causa?",
-        "en": "Requests started failing. What is the cause?"
+        "pt-BR": "O banco aguenta 600 rps e recebe leituras e escritas. Quando ele satura?",
+        "en": "The database handles 600 rps and takes reads and writes. When does it saturate?"
       },
       "options": [
         {
-          "id": "reads-on-db",
+          "id": "total",
           "text": {
-            "pt-BR": "Leituras demais ainda chegam a um banco sem capacidade para elas.",
-            "en": "Too many reads still reach a database that has no capacity for them."
+            "pt-BR": "Quando o total passa de 600 rps: leitura e escrita disputam a mesma capacidade.",
+            "en": "When the total goes over 600 rps: reads and writes compete for the same capacity."
           }
         },
         {
-          "id": "write-conflict",
+          "id": "writes",
           "text": {
-            "pt-BR": "As escritas estão em conflito entre si.",
-            "en": "Writes are conflicting with each other."
+            "pt-BR": "Só quando as escritas sozinhas passarem de 600 rps.",
+            "en": "Only when writes alone go over 600 rps."
           }
         },
         {
-          "id": "cache-errors",
+          "id": "reads",
           "text": {
-            "pt-BR": "O cache devolve erro quando não tem o dado.",
-            "en": "The cache returns an error when it lacks the data."
+            "pt-BR": "Só quando as leituras sozinhas passarem de 600 rps.",
+            "en": "Only when reads alone go over 600 rps."
+          }
+        },
+        {
+          "id": "never",
+          "text": {
+            "pt-BR": "Nunca: os servidores de aplicação limitam antes.",
+            "en": "Never: the app servers are the limit first."
           }
         }
       ],
-      "correctOptionId": "reads-on-db",
+      "correctOptionId": "total",
       "explanation": {
-        "pt-BR": "Um miss não é erro: ele segue para o banco. O cache reduz as leituras que chegam ao banco, mas o que sobra ainda precisa caber na capacidade dele.",
-        "en": "A miss is not an error: it goes on to the database. The cache cuts the reads that reach the database, but what is left still has to fit its capacity."
-      }
-    },
-    "staleReads": {
-      "id": "l2-diagnose-stale",
-      "conceptId": "replication-lag",
-      "prompt": {
-        "pt-BR": "Há leituras desatualizadas demais. Qual é a causa?",
-        "en": "There are too many stale reads. What is the cause?"
-      },
-      "options": [
-        {
-          "id": "lag-window",
-          "text": {
-            "pt-BR": "Leituras caem numa réplica antes de a escrita recente chegar até ela.",
-            "en": "Reads land on a replica before the recent write has reached it."
-          }
-        },
-        {
-          "id": "cache-old",
-          "text": {
-            "pt-BR": "O cache está guardando valores antigos.",
-            "en": "The cache is holding old values."
-          }
-        },
-        {
-          "id": "primary-lost",
-          "text": {
-            "pt-BR": "O primário está perdendo escritas.",
-            "en": "The primary is losing writes."
-          }
-        }
-      ],
-      "correctOptionId": "lag-window",
-      "explanation": {
-        "pt-BR": "Quanto maior o lag, maior a janela em que a réplica ainda mostra o valor antigo. Neste jogo o cache invalida a chave a cada escrita, então ele não é a fonte.",
-        "en": "The longer the lag, the wider the window in which the replica still shows the old value. In this game the cache invalidates the key on every write, so it is not the source."
-      }
-    },
-    "costTier": {
-      "id": "l2-diagnose-cost",
-      "conceptId": "caching",
-      "prompt": {
-        "pt-BR": "O custo passou da faixa permitida. Qual é a causa?",
-        "en": "Cost went above the allowed tier. What is the cause?"
-      },
-      "options": [
-        {
-          "id": "replicas-for-repeats",
-          "text": {
-            "pt-BR": "Há réplicas atendendo leituras repetidas que um cache responderia.",
-            "en": "Replicas are serving repeated reads that a cache would answer."
-          }
-        },
-        {
-          "id": "cache-expensive",
-          "text": {
-            "pt-BR": "O cache é a peça mais cara do tabuleiro.",
-            "en": "The cache is the most expensive piece on the board."
-          }
-        },
-        {
-          "id": "primary-expensive",
-          "text": {
-            "pt-BR": "O primário ficou mais caro com o tráfego.",
-            "en": "The primary got more expensive with traffic."
-          }
-        }
-      ],
-      "correctOptionId": "replicas-for-repeats",
-      "explanation": {
-        "pt-BR": "Um cache barato tira a maior parte das leituras do caminho. As réplicas só precisam cobrir o que sobra.",
-        "en": "A cheap cache takes most reads out of the way. Replicas only need to cover what is left."
+        "pt-BR": "Um banco não tem cotas separadas. Com 90% de leitura, são as leituras que tiram a capacidade das escritas, e é por isso que vale tirá-las de lá.",
+        "en": "A database has no separate quotas. With 90% reads, the reads are what take capacity away from the writes, which is why it pays to move them elsewhere."
       }
     }
-  },
-  "justifyQuestion": {
-    "id": "l2-justify",
-    "conceptId": "replication-lag",
-    "prompt": {
-      "pt-BR": "Por que as leituras desatualizadas ficaram dentro do limite?",
-      "en": "Why did stale reads stay within the limit?"
-    },
-    "options": [
+  ],
+  "diagnoseQuestions": {
+    "p99LatencyMs": [
       {
-        "id": "short-lag",
-        "text": {
-          "pt-BR": "As réplicas usadas têm lag curto: a janela em que mostram o valor antigo é pequena.",
-          "en": "The replicas in use have short lag: the window in which they show the old value is small."
+        "id": "l2-diagnose-latency",
+        "conceptId": "read-replicas",
+        "prompt": {
+          "pt-BR": "A latência p99 estourou o limite. Qual é a causa?",
+          "en": "p99 latency went over the limit. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "db-util",
+            "text": {
+              "pt-BR": "Algum banco está perto de 100% de utilização: as leituras que chegam a ele são mais do que ele atende com folga.",
+              "en": "Some database is close to 100% utilization: more reads reach it than it can serve with headroom."
+            }
+          },
+          {
+            "id": "cache-slow",
+            "text": {
+              "pt-BR": "O cache acrescenta latência a toda leitura.",
+              "en": "The cache adds latency to every read."
+            }
+          },
+          {
+            "id": "apps",
+            "text": {
+              "pt-BR": "Faltam servidores de aplicação.",
+              "en": "There are not enough app servers."
+            }
+          }
+        ],
+        "correctOptionId": "db-util",
+        "explanation": {
+          "pt-BR": "Olhe a utilização de cada banco. Leituras se espalham por réplicas; cada réplica a mais baixa a utilização das outras.",
+          "en": "Check the utilization of each database. Reads spread across replicas; each extra replica lowers the utilization of the others."
         }
       },
       {
-        "id": "cache-prevents",
-        "text": {
-          "pt-BR": "O cache impede qualquer leitura desatualizada.",
-          "en": "The cache prevents any stale read."
-        }
-      },
-      {
-        "id": "primary-reads",
-        "text": {
-          "pt-BR": "O primário passou a responder as leituras.",
-          "en": "The primary started answering the reads."
+        "id": "l2-diagnose-latency-cache-alone",
+        "conceptId": "caching",
+        "prompt": {
+          "pt-BR": "Um cache com 70% de acerto resolve sozinho a latência desta fase?",
+          "en": "Does a cache with a 70% hit rate fix this level's latency on its own?"
+        },
+        "options": [
+          {
+            "id": "no-misses",
+            "text": {
+              "pt-BR": "Não: os 30% de misses mais as escritas ainda passam da capacidade do banco.",
+              "en": "No: the 30% of misses plus the writes still exceed the database capacity."
+            }
+          },
+          {
+            "id": "yes-front",
+            "text": {
+              "pt-BR": "Sim, desde que fique antes do load balancer.",
+              "en": "Yes, as long as it sits before the load balancer."
+            }
+          },
+          {
+            "id": "no-writes",
+            "text": {
+              "pt-BR": "Não, porque cache deixa as escritas mais lentas.",
+              "en": "No, because a cache makes writes slower."
+            }
+          }
+        ],
+        "correctOptionId": "no-misses",
+        "explanation": {
+          "pt-BR": "Faça a conta: 1800 leituras × 30% = 540 misses, mais 200 escritas. São 740 rps num banco de 600. O cache reduz muito, mas o que sobra precisa de outro lugar para ir.",
+          "en": "Do the math: 1800 reads × 30% = 540 misses, plus 200 writes. That is 740 rps on a 600 rps database. The cache cuts a lot, but what is left needs somewhere else to go."
         }
       }
     ],
-    "correctOptionId": "short-lag",
-    "explanation": {
-      "pt-BR": "Réplica sempre troca frescor por capacidade. O que você controla é o tamanho da janela: lag curto custa mais, mas quase ninguém lê dentro dela.",
-      "en": "A replica always trades freshness for capacity. What you control is the size of the window: short lag costs more, but hardly anyone reads inside it."
+    "errorRate": [
+      {
+        "id": "l2-diagnose-errors",
+        "conceptId": "caching",
+        "prompt": {
+          "pt-BR": "Requisições começaram a falhar. Qual é a causa?",
+          "en": "Requests started failing. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "reads-on-db",
+            "text": {
+              "pt-BR": "Leituras demais ainda chegam a um banco sem capacidade para elas.",
+              "en": "Too many reads still reach a database that has no capacity for them."
+            }
+          },
+          {
+            "id": "write-conflict",
+            "text": {
+              "pt-BR": "As escritas estão em conflito entre si.",
+              "en": "Writes are conflicting with each other."
+            }
+          },
+          {
+            "id": "cache-errors",
+            "text": {
+              "pt-BR": "O cache devolve erro quando não tem o dado.",
+              "en": "The cache returns an error when it lacks the data."
+            }
+          }
+        ],
+        "correctOptionId": "reads-on-db",
+        "explanation": {
+          "pt-BR": "Um miss não é erro: ele segue para o banco. O cache reduz as leituras que chegam ao banco, mas o que sobra ainda precisa caber na capacidade dele.",
+          "en": "A miss is not an error: it goes on to the database. The cache cuts the reads that reach the database, but what is left still has to fit its capacity."
+        }
+      },
+      {
+        "id": "l2-diagnose-errors-read-capacity",
+        "conceptId": "read-replicas",
+        "prompt": {
+          "pt-BR": "Leituras continuam sendo descartadas. O que falta?",
+          "en": "Reads are still being dropped. What is missing?"
+        },
+        "options": [
+          {
+            "id": "read-capacity",
+            "text": {
+              "pt-BR": "Capacidade de leitura fora do primário, com folga para o que chega nela.",
+              "en": "Read capacity outside the primary, with headroom for what reaches it."
+            }
+          },
+          {
+            "id": "more-apps",
+            "text": {
+              "pt-BR": "Mais servidores de aplicação.",
+              "en": "More app servers."
+            }
+          },
+          {
+            "id": "second-lb",
+            "text": {
+              "pt-BR": "Um segundo load balancer.",
+              "en": "A second load balancer."
+            }
+          }
+        ],
+        "correctOptionId": "read-capacity",
+        "explanation": {
+          "pt-BR": "Réplica existe para isso: atende leitura sem ocupar o banco que grava. Some a capacidade das réplicas e compare com as leituras que chegam até elas.",
+          "en": "That is what a replica is for: it serves reads without tying up the database that writes. Add up the replicas' capacity and compare it with the reads that reach them."
+        }
+      }
+    ],
+    "staleReads": [
+      {
+        "id": "l2-diagnose-stale",
+        "conceptId": "replication-lag",
+        "prompt": {
+          "pt-BR": "Há leituras desatualizadas demais. Qual é a causa?",
+          "en": "There are too many stale reads. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "lag-window",
+            "text": {
+              "pt-BR": "Leituras caem numa réplica antes de a escrita recente chegar até ela.",
+              "en": "Reads land on a replica before the recent write has reached it."
+            }
+          },
+          {
+            "id": "cache-old",
+            "text": {
+              "pt-BR": "O cache está guardando valores antigos.",
+              "en": "The cache is holding old values."
+            }
+          },
+          {
+            "id": "primary-lost",
+            "text": {
+              "pt-BR": "O primário está perdendo escritas.",
+              "en": "The primary is losing writes."
+            }
+          }
+        ],
+        "correctOptionId": "lag-window",
+        "explanation": {
+          "pt-BR": "Quanto maior o lag, maior a janela em que a réplica ainda mostra o valor antigo. Neste jogo o cache invalida a chave a cada escrita, então ele não é a fonte.",
+          "en": "The longer the lag, the wider the window in which the replica still shows the old value. In this game the cache invalidates the key on every write, so it is not the source."
+        }
+      },
+      {
+        "id": "l2-diagnose-stale-near",
+        "conceptId": "replication-lag",
+        "prompt": {
+          "pt-BR": "Por que trocar a réplica distante pela próxima reduz as leituras desatualizadas?",
+          "en": "Why does swapping the distant replica for the nearby one reduce stale reads?"
+        },
+        "options": [
+          {
+            "id": "shorter-window",
+            "text": {
+              "pt-BR": "O lag menor encurta o tempo em que a réplica ainda não recebeu a escrita.",
+              "en": "The shorter lag shrinks the time in which the replica has not yet received the write."
+            }
+          },
+          {
+            "id": "more-capacity",
+            "text": {
+              "pt-BR": "A réplica próxima tem mais capacidade.",
+              "en": "The nearby replica has more capacity."
+            }
+          },
+          {
+            "id": "reads-cache",
+            "text": {
+              "pt-BR": "A réplica próxima lê direto do cache.",
+              "en": "The nearby replica reads straight from the cache."
+            }
+          }
+        ],
+        "correctOptionId": "shorter-window",
+        "explanation": {
+          "pt-BR": "As duas têm a mesma capacidade. O que muda é a janela: 2 segundos contra 100 milissegundos. Quanto menor a janela, menos leituras caem dentro dela.",
+          "en": "Both have the same capacity. What changes is the window: 2 seconds versus 100 milliseconds. The smaller the window, the fewer reads fall inside it."
+        }
+      }
+    ],
+    "costTier": [
+      {
+        "id": "l2-diagnose-cost",
+        "conceptId": "caching",
+        "prompt": {
+          "pt-BR": "O custo passou da faixa permitida. Qual é a causa?",
+          "en": "Cost went above the allowed tier. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "replicas-for-repeats",
+            "text": {
+              "pt-BR": "Há réplicas atendendo leituras repetidas que um cache responderia.",
+              "en": "Replicas are serving repeated reads that a cache would answer."
+            }
+          },
+          {
+            "id": "cache-expensive",
+            "text": {
+              "pt-BR": "O cache é a peça mais cara do tabuleiro.",
+              "en": "The cache is the most expensive piece on the board."
+            }
+          },
+          {
+            "id": "primary-expensive",
+            "text": {
+              "pt-BR": "O primário ficou mais caro com o tráfego.",
+              "en": "The primary got more expensive with traffic."
+            }
+          }
+        ],
+        "correctOptionId": "replicas-for-repeats",
+        "explanation": {
+          "pt-BR": "Um cache barato tira a maior parte das leituras do caminho. As réplicas só precisam cobrir o que sobra.",
+          "en": "A cheap cache takes most reads out of the way. Replicas only need to cover what is left."
+        }
+      },
+      {
+        "id": "l2-diagnose-cost-near-worth",
+        "conceptId": "read-replicas",
+        "prompt": {
+          "pt-BR": "A réplica próxima custa mais que a distante. Quando vale pagar por ela?",
+          "en": "The nearby replica costs more than the distant one. When is it worth paying for?"
+        },
+        "options": [
+          {
+            "id": "stale-limit",
+            "text": {
+              "pt-BR": "Quando há limite para leituras desatualizadas: o que se compra é o lag curto.",
+              "en": "When there is a limit on stale reads: the short lag is what you are buying."
+            }
+          },
+          {
+            "id": "always",
+            "text": {
+              "pt-BR": "Sempre: ela é melhor em tudo.",
+              "en": "Always: it is better at everything."
+            }
+          },
+          {
+            "id": "never",
+            "text": {
+              "pt-BR": "Nunca: o cache elimina a diferença.",
+              "en": "Never: the cache removes the difference."
+            }
+          }
+        ],
+        "correctOptionId": "stale-limit",
+        "explanation": {
+          "pt-BR": "Custo acompanha requisito. Se ninguém se importa com dado de 2 segundos atrás, a barata serve. Como o limite existe, pague pelo lag curto e economize em quantidade, com o cache.",
+          "en": "Cost follows the requirement. If nobody minds data from 2 seconds ago, the cheap one will do. Since the limit exists, pay for short lag and save on quantity, with the cache."
+        }
+      }
+    ]
+  },
+  "justifyQuestions": [
+    {
+      "id": "l2-justify",
+      "conceptId": "replication-lag",
+      "prompt": {
+        "pt-BR": "Por que as leituras desatualizadas ficaram dentro do limite?",
+        "en": "Why did stale reads stay within the limit?"
+      },
+      "options": [
+        {
+          "id": "short-lag",
+          "text": {
+            "pt-BR": "As réplicas usadas têm lag curto: a janela em que mostram o valor antigo é pequena.",
+            "en": "The replicas in use have short lag: the window in which they show the old value is small."
+          }
+        },
+        {
+          "id": "cache-prevents",
+          "text": {
+            "pt-BR": "O cache impede qualquer leitura desatualizada.",
+            "en": "The cache prevents any stale read."
+          }
+        },
+        {
+          "id": "primary-reads",
+          "text": {
+            "pt-BR": "O primário passou a responder as leituras.",
+            "en": "The primary started answering the reads."
+          }
+        }
+      ],
+      "correctOptionId": "short-lag",
+      "explanation": {
+        "pt-BR": "Réplica sempre troca frescor por capacidade. O que você controla é o tamanho da janela: lag curto custa mais, mas quase ninguém lê dentro dela.",
+        "en": "A replica always trades freshness for capacity. What you control is the size of the window: short lag costs more, but hardly anyone reads inside it."
+      }
+    },
+    {
+      "id": "l2-justify-cache-role",
+      "conceptId": "caching",
+      "prompt": {
+        "pt-BR": "Qual foi o papel do cache nessa arquitetura?",
+        "en": "What was the cache's role in this architecture?"
+      },
+      "options": [
+        {
+          "id": "absorbed",
+          "text": {
+            "pt-BR": "Respondeu a maior parte das leituras, então poucas sobraram para os bancos.",
+            "en": "It answered most of the reads, so few were left for the databases."
+          }
+        },
+        {
+          "id": "held-writes",
+          "text": {
+            "pt-BR": "Guardou as escritas até o banco ter folga.",
+            "en": "It held the writes until the database had headroom."
+          }
+        },
+        {
+          "id": "removed-lag",
+          "text": {
+            "pt-BR": "Eliminou o lag das réplicas.",
+            "en": "It removed the replicas' lag."
+          }
+        }
+      ],
+      "correctOptionId": "absorbed",
+      "explanation": {
+        "pt-BR": "Cache evita trabalho em vez de comprar capacidade. Ele não toca em escrita nem em lag: só faz a leitura repetida não chegar ao banco.",
+        "en": "A cache avoids work instead of buying capacity. It touches neither writes nor lag: it only keeps a repeated read from reaching the database."
+      }
     }
-  }
+  ]
 }
