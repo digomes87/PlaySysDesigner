@@ -1,0 +1,90 @@
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  height: var(--header-height);
+  padding: 0 var(--space-5);
+  border-bottom: 1px solid var(--color-line);
+  background: rgb(8 13 24 / 82%);
+  backdrop-filter: blur(10px);
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+/* Marca: três nós ligados, o menor diagrama de arquitetura possível. */
+.app-header__mark {
+  width: 22px;
+  height: 22px;
+  background:
+    radial-gradient(circle at 3px 11px, var(--color-signal) 3px, transparent 3.5px),
+    radial-gradient(circle at 19px 4px, var(--color-ink) 3px, transparent 3.5px),
+    radial-gradient(circle at 19px 18px, var(--color-ink) 3px, transparent 3.5px),
+    linear-gradient(to top right, transparent 46%, var(--color-ink-muted) 47% 53%, transparent 54%) 3px 4px / 16px 7px no-repeat,
+    linear-gradient(to bottom right, transparent 46%, var(--color-ink-muted) 47% 53%, transparent 54%) 3px 11px / 16px 7px no-repeat;
+}
+
+.app-header__nav {
+  display: flex;
+  gap: var(--space-5);
+  font-size: var(--text-sm);
+}
+
+.app-header__nav a {
+  padding: var(--space-1) 0;
+  border-bottom: 2px solid transparent;
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  transition:
+    color var(--duration-fast),
+    border-color var(--duration-fast);
+}
+
+.app-header__nav a:hover {
+  color: var(--color-ink);
+}
+
+.app-header__nav a.active {
+  border-bottom-color: var(--color-signal);
+  color: var(--color-ink);
+}
+
+.locale-switch {
+  display: flex;
+  margin-left: auto;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.locale-switch button {
+  padding: 0.3rem 0.7rem;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast);
+}
+
+.locale-switch button:hover {
+  color: var(--color-ink);
+}
+
+.locale-switch button.is-active {
+  background: var(--color-signal);
+  color: var(--color-signal-ink);
+  font-weight: 700;
+}
