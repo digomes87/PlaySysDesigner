@@ -1,0 +1,287 @@
+.board {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface-sunken);
+}
+
+.board .react-flow {
+  --xy-background-color: transparent;
+  --xy-background-pattern-color: rgb(120 160 255 / 22%);
+  --xy-edge-stroke: var(--color-line-strong);
+  --xy-edge-stroke-selected: var(--color-signal);
+  --xy-connectionline-stroke: var(--color-signal);
+  --xy-handle-background-color: var(--color-surface);
+  --xy-handle-border-color: var(--color-ink-soft);
+  --xy-controls-button-background-color: var(--color-surface-raised);
+  --xy-controls-button-background-color-hover: var(--color-line);
+  --xy-controls-button-color: var(--color-ink);
+  --xy-controls-button-border-color: var(--color-line);
+  --xy-attribution-background-color: transparent;
+  font-family: var(--font-display);
+}
+
+.board .react-flow__attribution a {
+  color: var(--color-ink-muted);
+}
+
+.board .react-flow__handle {
+  width: 11px;
+  height: 11px;
+  border-width: 2px;
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.board:not(.board--readonly) .react-flow__handle:hover {
+  border-color: var(--color-signal);
+  box-shadow: 0 0 0 5px rgb(245 213 71 / 30%);
+}
+
+.board--readonly .react-flow__handle {
+  opacity: 0.35;
+}
+
+/* Peça */
+.component-node {
+  width: 176px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, var(--color-surface-raised), var(--color-surface));
+  box-shadow: var(--shadow-raised);
+  color: var(--color-ink);
+  transition:
+    border-color var(--duration-fast),
+    box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.component-node.is-locked {
+  border-style: dashed;
+}
+
+.component-node.is-selected {
+  border-color: var(--color-signal);
+  box-shadow: var(--shadow-signal);
+}
+
+.component-node.is-dropping {
+  border-color: var(--color-critical);
+  box-shadow:
+    0 0 0 1px rgb(208 59 59 / 55%),
+    0 0 28px -6px rgb(208 59 59 / 70%);
+}
+
+.component-node.is-down {
+  opacity: 0.55;
+  border-color: var(--color-critical);
+}
+
+.component-node__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.component-node__glyph {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-soft);
+}
+
+.component-node--traffic_source .component-node__glyph {
+  color: var(--color-signal);
+  border-color: rgb(245 213 71 / 45%);
+}
+
+.component-node__title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.component-node__specs {
+  margin-top: var(--space-2);
+  font-size: 0.6875rem;
+  color: var(--color-ink-muted);
+}
+
+.component-node__load {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.component-node__meter {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+}
+
+.component-node__meter span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-ink-soft);
+  transform-origin: left;
+  transition: transform 120ms linear;
+}
+
+.component-node__load--hot .component-node__meter span {
+  background: var(--color-warning);
+}
+
+.component-node__load--full .component-node__meter span {
+  background: var(--color-critical);
+}
+
+.component-node__percent {
+  min-width: 3.2em;
+  font-size: 0.6875rem;
+  text-align: right;
+  color: var(--color-ink-soft);
+}
+
+.component-node__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badge {
+  padding: 1px 6px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  font-size: 0.625rem;
+  color: var(--color-ink-soft);
+}
+
+.badge--critical {
+  border-color: rgb(208 59 59 / 70%);
+  color: var(--color-critical-ink);
+}
+
+/* Ligações e partículas */
+.flow-edge.is-active .react-flow__edge-path {
+  stroke: var(--color-line-strong);
+}
+
+.flow-particle {
+  stroke: var(--color-surface-sunken);
+  stroke-width: 1;
+  offset-rotate: 0deg;
+  animation: flow-travel 1.3s linear infinite;
+}
+
+@keyframes flow-travel {
+  from {
+    offset-distance: 0%;
+  }
+
+  to {
+    offset-distance: 100%;
+  }
+}
+
+.flow-particle--read {
+  fill: var(--color-read);
+}
+
+.flow-particle--write {
+  fill: var(--color-write);
+}
+
+.flow-particle--bot {
+  fill: var(--color-bot);
+}
+
+/* Paleta */
+.palette__hint {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+.palette__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.palette__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  text-align: left;
+  cursor: grab;
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast);
+}
+
+.palette__item:hover:not(:disabled) {
+  border-color: var(--color-signal);
+  transform: translateX(3px);
+}
+
+.palette__item:active:not(:disabled) {
+  cursor: grabbing;
+}
+
+.palette__item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.palette__glyph {
+  display: grid;
+  place-items: center;
+  color: var(--color-ink-soft);
+}
+
+.palette__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.palette__name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.palette__specs {
+  font-size: 0.6875rem;
+  color: var(--color-ink-muted);
+}
+
+.palette__meta {
+  display: grid;
+  justify-items: end;
+  font-size: 0.6875rem;
+  color: var(--color-ink-muted);
+}
