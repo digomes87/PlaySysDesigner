@@ -9,6 +9,8 @@ export const TICKS_PER_SEC = 1000 / TICK_MS;
 export const LATENCY_CEILING_FACTOR = 20;
 /** Janela deslizante usada para p99 e errorRate ao avaliar SLOs. */
 export const SLO_WINDOW_SEC = 5;
+/** Abaixo disto a janela ainda não tem amostra para p99/errorRate: uma falha isolada não reprova. */
+export const SLO_MIN_SAMPLES = 10;
 /** Um segundo conta como disponível se a taxa de erro dele ficar até este limite. */
 export const AVAILABILITY_ERROR_THRESHOLD = 0.05;
 export const MAX_HOPS = 16;
@@ -50,6 +52,8 @@ export interface BoardNode {
   readonly position: { readonly x: number; readonly y: number };
   /** Peça do sistema inicial: o jogador não remove. */
   readonly locked?: boolean;
+  /** Peça da paleta que originou o nó; o motor ignora. */
+  readonly paletteId?: string;
 }
 
 export interface BoardEdge {

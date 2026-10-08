@@ -1,0 +1,500 @@
+{
+  "schemaVersion": 1,
+  "id": "level-02",
+  "title": {
+    "pt-BR": "O banco está derretendo",
+    "en": "The database is melting"
+  },
+  "briefing": {
+    "text": {
+      "pt-BR": "Seu catálogo de filmes cresceu. De cada dez requisições, nove são leituras, e todas batem no mesmo banco que grava as avaliações. Os servidores aguentam; o banco não.",
+      "en": "Your movie catalog has grown. Nine out of ten requests are reads, and all of them hit the same database that stores the ratings. The servers cope; the database does not."
+    },
+    "requirements": [
+      {
+        "pt-BR": "Aguentar 2000 requisições por segundo, 90% leitura.",
+        "en": "Handle 2000 requests per second, 90% reads."
+      },
+      {
+        "pt-BR": "Erros em no máximo 1% das requisições.",
+        "en": "Errors on at most 1% of requests."
+      },
+      {
+        "pt-BR": "Latência p99 de até 300 ms.",
+        "en": "p99 latency of at most 300 ms."
+      },
+      {
+        "pt-BR": "No máximo 1000 leituras desatualizadas na partida.",
+        "en": "At most 1000 stale reads over the run."
+      },
+      {
+        "pt-BR": "Custo até a faixa média.",
+        "en": "Cost no higher than the middle tier."
+      }
+    ]
+  },
+  "concepts": [
+    "caching",
+    "read-replicas",
+    "replication-lag"
+  ],
+  "initialBoard": {
+    "nodes": [
+      {
+        "id": "src",
+        "type": "traffic_source",
+        "spec": {
+          "capacityRps": 0,
+          "baseLatencyMs": 0,
+          "costTier": "low",
+          "bufferSize": 0,
+          "params": {}
+        },
+        "position": {
+          "x": 0,
+          "y": 220
+        },
+        "locked": true
+      },
+      {
+        "id": "lb",
+        "type": "load_balancer",
+        "spec": {
+          "capacityRps": 20000,
+          "baseLatencyMs": 1,
+          "costTier": "low",
+          "bufferSize": 0,
+          "params": {}
+        },
+        "position": {
+          "x": 200,
+          "y": 220
+        },
+        "locked": true
+      },
+      {
+        "id": "app-1",
+        "type": "app_server",
+        "spec": {
+          "capacityRps": 1500,
+          "baseLatencyMs": 15,
+          "costTier": "low",
+          "bufferSize": 100,
+          "params": {}
+        },
+        "position": {
+          "x": 420,
+          "y": 120
+        },
+        "locked": true
+      },
+      {
+        "id": "app-2",
+        "type": "app_server",
+        "spec": {
+          "capacityRps": 1500,
+          "baseLatencyMs": 15,
+          "costTier": "low",
+          "bufferSize": 100,
+          "params": {}
+        },
+        "position": {
+          "x": 420,
+          "y": 320
+        },
+        "locked": true
+      },
+      {
+        "id": "db",
+        "type": "db_primary",
+        "spec": {
+          "capacityRps": 600,
+          "baseLatencyMs": 10,
+          "costTier": "mid",
+          "bufferSize": 100,
+          "params": {}
+        },
+        "position": {
+          "x": 940,
+          "y": 380
+        },
+        "locked": true
+      }
+    ],
+    "edges": [
+      {
+        "id": "src->lb",
+        "from": "src",
+        "to": "lb"
+      },
+      {
+        "id": "lb->app-1",
+        "from": "lb",
+        "to": "app-1"
+      },
+      {
+        "id": "lb->app-2",
+        "from": "lb",
+        "to": "app-2"
+      },
+      {
+        "id": "app-1->db",
+        "from": "app-1",
+        "to": "db"
+      },
+      {
+        "id": "app-2->db",
+        "from": "app-2",
+        "to": "db"
+      }
+    ]
+  },
+  "availableComponents": [
+    {
+      "id": "cache",
+      "type": "cache",
+      "label": {
+        "pt-BR": "Cache (70% de acerto)",
+        "en": "Cache (70% hit rate)"
+      },
+      "spec": {
+        "capacityRps": 20000,
+        "baseLatencyMs": 2,
+        "costTier": "low",
+        "bufferSize": 0,
+        "params": {
+          "hitRate": 0.7
+        }
+      },
+      "max": 1
+    },
+    {
+      "id": "replica-near",
+      "type": "db_replica",
+      "label": {
+        "pt-BR": "Réplica próxima (lag 100 ms)",
+        "en": "Nearby replica (100 ms lag)"
+      },
+      "spec": {
+        "capacityRps": 400,
+        "baseLatencyMs": 8,
+        "costTier": "mid",
+        "bufferSize": 100,
+        "params": {
+          "replicationLagMs": 100
+        }
+      },
+      "max": 6
+    },
+    {
+      "id": "replica-far",
+      "type": "db_replica",
+      "label": {
+        "pt-BR": "Réplica distante (lag 2 s)",
+        "en": "Distant replica (2 s lag)"
+      },
+      "spec": {
+        "capacityRps": 400,
+        "baseLatencyMs": 8,
+        "costTier": "low",
+        "bufferSize": 100,
+        "params": {
+          "replicationLagMs": 2000
+        }
+      },
+      "max": 6
+    }
+  ],
+  "traffic": {
+    "baseRps": 600,
+    "mix": {
+      "read": 0.9,
+      "write": 0.1,
+      "bot": 0
+    },
+    "keyspace": 2000
+  },
+  "events": [
+    {
+      "atSec": 3,
+      "type": "traffic_ramp",
+      "params": {
+        "toRps": 2000,
+        "durationSec": 10
+      },
+      "conceptId": "read-replicas"
+    }
+  ],
+  "slos": [
+    {
+      "metric": "p99LatencyMs",
+      "op": "lte",
+      "value": 300
+    },
+    {
+      "metric": "errorRate",
+      "op": "lte",
+      "value": 0.01
+    },
+    {
+      "metric": "staleReads",
+      "op": "lte",
+      "value": 1000
+    },
+    {
+      "metric": "costTier",
+      "op": "lte",
+      "value": "mid"
+    }
+  ],
+  "costBudget": {
+    "low": 6,
+    "mid": 10
+  },
+  "durationSec": 40,
+  "seed": 202,
+  "scaffolding": {
+    "labels": true,
+    "hints": true,
+    "showConcepts": true
+  },
+  "hints": [
+    {
+      "pt-BR": "Leitura repetida não precisa ir ao banco toda vez. O que responde antes dele?",
+      "en": "A repeated read does not need to reach the database every time. What can answer before it?"
+    },
+    {
+      "pt-BR": "O que o cache não responde ainda precisa de um banco. Precisa ser o mesmo que grava?",
+      "en": "Whatever the cache cannot answer still needs a database. Does it have to be the one that writes?"
+    },
+    {
+      "pt-BR": "Uma réplica leva um tempo para receber cada escrita. Quem lê nesse intervalo vê o valor antigo.",
+      "en": "A replica takes a while to receive each write. Whoever reads in that interval sees the old value."
+    }
+  ],
+  "predictQuestion": {
+    "id": "l2-predict",
+    "conceptId": "read-replicas",
+    "prompt": {
+      "pt-BR": "O tráfego vai subir para 2000 rps, 90% leitura. O que quebra primeiro?",
+      "en": "Traffic will climb to 2000 rps, 90% reads. What breaks first?"
+    },
+    "options": [
+      {
+        "id": "db",
+        "text": {
+          "pt-BR": "O banco primário, que recebe todas as leituras e todas as escritas.",
+          "en": "The primary database, which takes every read and every write."
+        }
+      },
+      {
+        "id": "apps",
+        "text": {
+          "pt-BR": "Os servidores de aplicação.",
+          "en": "The app servers."
+        }
+      },
+      {
+        "id": "lb",
+        "text": {
+          "pt-BR": "O load balancer.",
+          "en": "The load balancer."
+        }
+      },
+      {
+        "id": "writes",
+        "text": {
+          "pt-BR": "Só as escritas falham; as leituras continuam passando.",
+          "en": "Only writes fail; reads keep going through."
+        }
+      }
+    ],
+    "correctOptionId": "db",
+    "explanation": {
+      "pt-BR": "Os dois servidores somam 3000 rps; o banco, 600. Ele satura primeiro e não distingue leitura de escrita: descarta as duas.",
+      "en": "The two servers add up to 3000 rps; the database, 600. It saturates first and does not tell reads from writes: it drops both."
+    }
+  },
+  "diagnoseQuestions": {
+    "p99LatencyMs": {
+      "id": "l2-diagnose-latency",
+      "conceptId": "read-replicas",
+      "prompt": {
+        "pt-BR": "A latência p99 estourou o limite. Qual é a causa?",
+        "en": "p99 latency went over the limit. What is the cause?"
+      },
+      "options": [
+        {
+          "id": "db-util",
+          "text": {
+            "pt-BR": "Algum banco está perto de 100% de utilização: as leituras que chegam a ele são mais do que ele atende com folga.",
+            "en": "Some database is close to 100% utilization: more reads reach it than it can serve with headroom."
+          }
+        },
+        {
+          "id": "cache-slow",
+          "text": {
+            "pt-BR": "O cache acrescenta latência a toda leitura.",
+            "en": "The cache adds latency to every read."
+          }
+        },
+        {
+          "id": "apps",
+          "text": {
+            "pt-BR": "Faltam servidores de aplicação.",
+            "en": "There are not enough app servers."
+          }
+        }
+      ],
+      "correctOptionId": "db-util",
+      "explanation": {
+        "pt-BR": "Olhe a utilização de cada banco. Leituras se espalham por réplicas; cada réplica a mais baixa a utilização das outras.",
+        "en": "Check the utilization of each database. Reads spread across replicas; each extra replica lowers the utilization of the others."
+      }
+    },
+    "errorRate": {
+      "id": "l2-diagnose-errors",
+      "conceptId": "caching",
+      "prompt": {
+        "pt-BR": "Requisições começaram a falhar. Qual é a causa?",
+        "en": "Requests started failing. What is the cause?"
+      },
+      "options": [
+        {
+          "id": "reads-on-db",
+          "text": {
+            "pt-BR": "Leituras demais ainda chegam a um banco sem capacidade para elas.",
+            "en": "Too many reads still reach a database that has no capacity for them."
+          }
+        },
+        {
+          "id": "write-conflict",
+          "text": {
+            "pt-BR": "As escritas estão em conflito entre si.",
+            "en": "Writes are conflicting with each other."
+          }
+        },
+        {
+          "id": "cache-errors",
+          "text": {
+            "pt-BR": "O cache devolve erro quando não tem o dado.",
+            "en": "The cache returns an error when it lacks the data."
+          }
+        }
+      ],
+      "correctOptionId": "reads-on-db",
+      "explanation": {
+        "pt-BR": "Um miss não é erro: ele segue para o banco. O cache reduz as leituras que chegam ao banco, mas o que sobra ainda precisa caber na capacidade dele.",
+        "en": "A miss is not an error: it goes on to the database. The cache cuts the reads that reach the database, but what is left still has to fit its capacity."
+      }
+    },
+    "staleReads": {
+      "id": "l2-diagnose-stale",
+      "conceptId": "replication-lag",
+      "prompt": {
+        "pt-BR": "Há leituras desatualizadas demais. Qual é a causa?",
+        "en": "There are too many stale reads. What is the cause?"
+      },
+      "options": [
+        {
+          "id": "lag-window",
+          "text": {
+            "pt-BR": "Leituras caem numa réplica antes de a escrita recente chegar até ela.",
+            "en": "Reads land on a replica before the recent write has reached it."
+          }
+        },
+        {
+          "id": "cache-old",
+          "text": {
+            "pt-BR": "O cache está guardando valores antigos.",
+            "en": "The cache is holding old values."
+          }
+        },
+        {
+          "id": "primary-lost",
+          "text": {
+            "pt-BR": "O primário está perdendo escritas.",
+            "en": "The primary is losing writes."
+          }
+        }
+      ],
+      "correctOptionId": "lag-window",
+      "explanation": {
+        "pt-BR": "Quanto maior o lag, maior a janela em que a réplica ainda mostra o valor antigo. Neste jogo o cache invalida a chave a cada escrita, então ele não é a fonte.",
+        "en": "The longer the lag, the wider the window in which the replica still shows the old value. In this game the cache invalidates the key on every write, so it is not the source."
+      }
+    },
+    "costTier": {
+      "id": "l2-diagnose-cost",
+      "conceptId": "caching",
+      "prompt": {
+        "pt-BR": "O custo passou da faixa permitida. Qual é a causa?",
+        "en": "Cost went above the allowed tier. What is the cause?"
+      },
+      "options": [
+        {
+          "id": "replicas-for-repeats",
+          "text": {
+            "pt-BR": "Há réplicas atendendo leituras repetidas que um cache responderia.",
+            "en": "Replicas are serving repeated reads that a cache would answer."
+          }
+        },
+        {
+          "id": "cache-expensive",
+          "text": {
+            "pt-BR": "O cache é a peça mais cara do tabuleiro.",
+            "en": "The cache is the most expensive piece on the board."
+          }
+        },
+        {
+          "id": "primary-expensive",
+          "text": {
+            "pt-BR": "O primário ficou mais caro com o tráfego.",
+            "en": "The primary got more expensive with traffic."
+          }
+        }
+      ],
+      "correctOptionId": "replicas-for-repeats",
+      "explanation": {
+        "pt-BR": "Um cache barato tira a maior parte das leituras do caminho. As réplicas só precisam cobrir o que sobra.",
+        "en": "A cheap cache takes most reads out of the way. Replicas only need to cover what is left."
+      }
+    }
+  },
+  "justifyQuestion": {
+    "id": "l2-justify",
+    "conceptId": "replication-lag",
+    "prompt": {
+      "pt-BR": "Por que as leituras desatualizadas ficaram dentro do limite?",
+      "en": "Why did stale reads stay within the limit?"
+    },
+    "options": [
+      {
+        "id": "short-lag",
+        "text": {
+          "pt-BR": "As réplicas usadas têm lag curto: a janela em que mostram o valor antigo é pequena.",
+          "en": "The replicas in use have short lag: the window in which they show the old value is small."
+        }
+      },
+      {
+        "id": "cache-prevents",
+        "text": {
+          "pt-BR": "O cache impede qualquer leitura desatualizada.",
+          "en": "The cache prevents any stale read."
+        }
+      },
+      {
+        "id": "primary-reads",
+        "text": {
+          "pt-BR": "O primário passou a responder as leituras.",
+          "en": "The primary started answering the reads."
+        }
+      }
+    ],
+    "correctOptionId": "short-lag",
+    "explanation": {
+      "pt-BR": "Réplica sempre troca frescor por capacidade. O que você controla é o tamanho da janela: lag curto custa mais, mas quase ninguém lê dentro dela.",
+      "en": "A replica always trades freshness for capacity. What you control is the size of the window: short lag costs more, but hardly anyone reads inside it."
+    }
+  }
+}

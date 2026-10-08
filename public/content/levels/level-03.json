@@ -1,0 +1,538 @@
+{
+  "schemaVersion": 1,
+  "id": "level-03",
+  "title": {
+    "pt-BR": "Black Friday",
+    "en": "Black Friday"
+  },
+  "briefing": {
+    "text": {
+      "pt-BR": "Sua loja abre a promoção em instantes. Os pedidos vão multiplicar por dez por alguns segundos e, logo depois, robôs de preço vão varrer o catálogo. Pedido perdido é dinheiro perdido.",
+      "en": "Your store opens the sale in a moment. Orders will grow tenfold for a few seconds and, right after, price bots will sweep the catalog. A lost order is lost money."
+    },
+    "requirements": [
+      {
+        "pt-BR": "Nenhum pedido perdido.",
+        "en": "No lost orders."
+      },
+      {
+        "pt-BR": "Erros em no máximo 1% das requisições legítimas.",
+        "en": "Errors on at most 1% of legitimate requests."
+      },
+      {
+        "pt-BR": "Latência p99 de até 400 ms.",
+        "en": "p99 latency of at most 400 ms."
+      },
+      {
+        "pt-BR": "Custo até a faixa média.",
+        "en": "Cost no higher than the middle tier."
+      }
+    ]
+  },
+  "concepts": [
+    "async-queue",
+    "rate-limiting"
+  ],
+  "initialBoard": {
+    "nodes": [
+      {
+        "id": "src",
+        "type": "traffic_source",
+        "spec": {
+          "capacityRps": 0,
+          "baseLatencyMs": 0,
+          "costTier": "low",
+          "bufferSize": 0,
+          "params": {}
+        },
+        "position": {
+          "x": 0,
+          "y": 240
+        },
+        "locked": true
+      },
+      {
+        "id": "lb",
+        "type": "load_balancer",
+        "spec": {
+          "capacityRps": 20000,
+          "baseLatencyMs": 1,
+          "costTier": "low",
+          "bufferSize": 0,
+          "params": {}
+        },
+        "position": {
+          "x": 400,
+          "y": 240
+        },
+        "locked": true
+      },
+      {
+        "id": "app-1",
+        "type": "app_server",
+        "spec": {
+          "capacityRps": 3000,
+          "baseLatencyMs": 15,
+          "costTier": "low",
+          "bufferSize": 100,
+          "params": {}
+        },
+        "position": {
+          "x": 600,
+          "y": 140
+        },
+        "locked": true
+      },
+      {
+        "id": "app-2",
+        "type": "app_server",
+        "spec": {
+          "capacityRps": 3000,
+          "baseLatencyMs": 15,
+          "costTier": "low",
+          "bufferSize": 100,
+          "params": {}
+        },
+        "position": {
+          "x": 600,
+          "y": 340
+        },
+        "locked": true
+      },
+      {
+        "id": "cache",
+        "type": "cache",
+        "spec": {
+          "capacityRps": 20000,
+          "baseLatencyMs": 2,
+          "costTier": "low",
+          "bufferSize": 0,
+          "params": {
+            "hitRate": 0.8
+          }
+        },
+        "position": {
+          "x": 840,
+          "y": 60
+        },
+        "locked": true
+      },
+      {
+        "id": "replica",
+        "type": "db_replica",
+        "spec": {
+          "capacityRps": 800,
+          "baseLatencyMs": 8,
+          "costTier": "mid",
+          "bufferSize": 50,
+          "params": {
+            "replicationLagMs": 100
+          }
+        },
+        "position": {
+          "x": 1080,
+          "y": 60
+        },
+        "locked": true
+      },
+      {
+        "id": "db",
+        "type": "db_primary",
+        "spec": {
+          "capacityRps": 400,
+          "baseLatencyMs": 10,
+          "costTier": "mid",
+          "bufferSize": 50,
+          "params": {}
+        },
+        "position": {
+          "x": 1320,
+          "y": 340
+        },
+        "locked": true
+      }
+    ],
+    "edges": [
+      {
+        "id": "src->lb",
+        "from": "src",
+        "to": "lb"
+      },
+      {
+        "id": "lb->app-1",
+        "from": "lb",
+        "to": "app-1"
+      },
+      {
+        "id": "lb->app-2",
+        "from": "lb",
+        "to": "app-2"
+      },
+      {
+        "id": "app-1->cache",
+        "from": "app-1",
+        "to": "cache"
+      },
+      {
+        "id": "app-2->cache",
+        "from": "app-2",
+        "to": "cache"
+      },
+      {
+        "id": "cache->replica",
+        "from": "cache",
+        "to": "replica"
+      },
+      {
+        "id": "app-1->db",
+        "from": "app-1",
+        "to": "db"
+      },
+      {
+        "id": "app-2->db",
+        "from": "app-2",
+        "to": "db"
+      }
+    ]
+  },
+  "availableComponents": [
+    {
+      "id": "queue",
+      "type": "queue",
+      "label": {
+        "pt-BR": "Fila",
+        "en": "Queue"
+      },
+      "spec": {
+        "capacityRps": 20000,
+        "baseLatencyMs": 2,
+        "costTier": "low",
+        "bufferSize": 50000,
+        "params": {}
+      },
+      "max": 1
+    },
+    {
+      "id": "worker",
+      "type": "worker",
+      "label": {
+        "pt-BR": "Worker (180 por segundo)",
+        "en": "Worker (180 per second)"
+      },
+      "spec": {
+        "capacityRps": 180,
+        "baseLatencyMs": 5,
+        "costTier": "low",
+        "bufferSize": 0,
+        "params": {}
+      },
+      "max": 3
+    },
+    {
+      "id": "rate-limiter",
+      "type": "rate_limiter",
+      "label": {
+        "pt-BR": "Rate limiter (100 bots por segundo)",
+        "en": "Rate limiter (100 bots per second)"
+      },
+      "spec": {
+        "capacityRps": 20000,
+        "baseLatencyMs": 1,
+        "costTier": "low",
+        "bufferSize": 0,
+        "params": {
+          "limitRps": 100
+        }
+      },
+      "max": 1
+    }
+  ],
+  "traffic": {
+    "baseRps": 300,
+    "mix": {
+      "read": 0.6,
+      "write": 0.4,
+      "bot": 0
+    },
+    "keyspace": 100000
+  },
+  "events": [
+    {
+      "atSec": 8,
+      "type": "traffic_spike",
+      "params": {
+        "multiplier": 10,
+        "durationSec": 8
+      },
+      "conceptId": "async-queue"
+    },
+    {
+      "atSec": 24,
+      "type": "bot_wave",
+      "params": {
+        "rps": 2500,
+        "durationSec": 8
+      },
+      "conceptId": "rate-limiting"
+    }
+  ],
+  "slos": [
+    {
+      "metric": "lostWrites",
+      "op": "lte",
+      "value": 0
+    },
+    {
+      "metric": "errorRate",
+      "op": "lte",
+      "value": 0.01
+    },
+    {
+      "metric": "p99LatencyMs",
+      "op": "lte",
+      "value": 400
+    },
+    {
+      "metric": "costTier",
+      "op": "lte",
+      "value": "mid"
+    }
+  ],
+  "costBudget": {
+    "low": 8,
+    "mid": 13
+  },
+  "durationSec": 40,
+  "seed": 303,
+  "scaffolding": {
+    "labels": true,
+    "hints": false,
+    "showConcepts": true
+  },
+  "hints": [],
+  "predictQuestion": {
+    "id": "l3-predict",
+    "conceptId": "async-queue",
+    "prompt": {
+      "pt-BR": "Os pedidos vão multiplicar por dez por 8 segundos. O que quebra primeiro?",
+      "en": "Orders will grow tenfold for 8 seconds. What breaks first?"
+    },
+    "options": [
+      {
+        "id": "primary",
+        "text": {
+          "pt-BR": "O banco primário: chegam mais pedidos do que ele grava, e o excedente é descartado.",
+          "en": "The primary database: more orders arrive than it can write, and the excess is dropped."
+        }
+      },
+      {
+        "id": "apps",
+        "text": {
+          "pt-BR": "Os servidores de aplicação.",
+          "en": "The app servers."
+        }
+      },
+      {
+        "id": "cache",
+        "text": {
+          "pt-BR": "O cache, que não aguenta tanta leitura.",
+          "en": "The cache, which cannot take that many reads."
+        }
+      },
+      {
+        "id": "replica",
+        "text": {
+          "pt-BR": "A réplica de leitura.",
+          "en": "The read replica."
+        }
+      }
+    ],
+    "correctOptionId": "primary",
+    "explanation": {
+      "pt-BR": "No pico chegam 1200 pedidos por segundo e o primário grava 400. Os servidores somam 6000 rps e o cache responde quase todas as leituras: sobra para o banco de escrita.",
+      "en": "At the peak 1200 orders per second arrive and the primary writes 400. The servers add up to 6000 rps and the cache answers nearly every read: the write database takes the hit."
+    }
+  },
+  "diagnoseQuestions": {
+    "lostWrites": {
+      "id": "l3-diagnose-lost",
+      "conceptId": "async-queue",
+      "prompt": {
+        "pt-BR": "Pedidos foram perdidos. Qual é a causa?",
+        "en": "Orders were lost. What is the cause?"
+      },
+      "options": [
+        {
+          "id": "faster-than-db",
+          "text": {
+            "pt-BR": "Escritas chegaram ao banco mais rápido do que ele grava, e o excedente foi descartado.",
+            "en": "Writes reached the database faster than it can store them, and the excess was dropped."
+          }
+        },
+        {
+          "id": "bots",
+          "text": {
+            "pt-BR": "Os bots apagaram pedidos.",
+            "en": "The bots deleted orders."
+          }
+        },
+        {
+          "id": "replica-lag",
+          "text": {
+            "pt-BR": "A réplica não recebeu os pedidos a tempo.",
+            "en": "The replica did not receive the orders in time."
+          }
+        }
+      ],
+      "correctOptionId": "faster-than-db",
+      "explanation": {
+        "pt-BR": "Vale para o tráfego direto e para workers: se a entrega ao banco passa da capacidade dele, o que não cabe some. A fila só protege se a saída dela respeitar o ritmo do banco.",
+        "en": "It holds for direct traffic and for workers alike: if delivery to the database exceeds its capacity, whatever does not fit is gone. The queue only protects if its output respects the database's pace."
+      }
+    },
+    "errorRate": {
+      "id": "l3-diagnose-errors",
+      "conceptId": "rate-limiting",
+      "prompt": {
+        "pt-BR": "Requisições legítimas começaram a falhar. Qual é a causa?",
+        "en": "Legitimate requests started failing. What is the cause?"
+      },
+      "options": [
+        {
+          "id": "shared-capacity",
+          "text": {
+            "pt-BR": "Tráfego que não deveria passar está ocupando a capacidade que os clientes usam.",
+            "en": "Traffic that should not get through is taking up the capacity customers use."
+          }
+        },
+        {
+          "id": "queue-errors",
+          "text": {
+            "pt-BR": "A fila devolve erro quando está ocupada.",
+            "en": "The queue returns an error when it is busy."
+          }
+        },
+        {
+          "id": "cache-down",
+          "text": {
+            "pt-BR": "O cache parou de responder.",
+            "en": "The cache stopped answering."
+          }
+        }
+      ],
+      "correctOptionId": "shared-capacity",
+      "explanation": {
+        "pt-BR": "Bot e cliente disputam a mesma capacidade. Os bots pedem itens que ninguém mais pede, furam o cache e lotam o banco de leitura; o cliente legítimo é descartado junto.",
+        "en": "Bots and customers compete for the same capacity. Bots ask for items nobody else asks for, pierce the cache and flood the read database; the legitimate customer gets dropped along with them."
+      }
+    },
+    "p99LatencyMs": {
+      "id": "l3-diagnose-latency",
+      "conceptId": "rate-limiting",
+      "prompt": {
+        "pt-BR": "A latência p99 estourou o limite. Qual é a causa?",
+        "en": "p99 latency went over the limit. What is the cause?"
+      },
+      "options": [
+        {
+          "id": "saturated-path",
+          "text": {
+            "pt-BR": "Um componente no caminho das requisições está saturado e elas esperam na fila dele.",
+            "en": "A component on the request path is saturated and requests wait in its line."
+          }
+        },
+        {
+          "id": "queue-wait",
+          "text": {
+            "pt-BR": "O cliente espera o worker terminar de gravar o pedido.",
+            "en": "The customer waits for the worker to finish writing the order."
+          }
+        },
+        {
+          "id": "limiter-slow",
+          "text": {
+            "pt-BR": "O rate limiter atrasa toda requisição.",
+            "en": "The rate limiter delays every request."
+          }
+        }
+      ],
+      "correctOptionId": "saturated-path",
+      "explanation": {
+        "pt-BR": "Veja qual componente está perto de 100%. A fila não entra na conta: ela confirma o pedido na hora e o worker grava depois, fora do tempo de resposta do cliente.",
+        "en": "Look for the component close to 100%. The queue is not part of it: it confirms the order right away and the worker writes later, outside the customer's response time."
+      }
+    },
+    "costTier": {
+      "id": "l3-diagnose-cost",
+      "conceptId": "async-queue",
+      "prompt": {
+        "pt-BR": "O custo passou da faixa permitida. Qual é a causa?",
+        "en": "Cost went above the allowed tier. What is the cause?"
+      },
+      "options": [
+        {
+          "id": "too-many",
+          "text": {
+            "pt-BR": "Há mais peças do que o problema exige.",
+            "en": "There are more pieces than the problem requires."
+          }
+        },
+        {
+          "id": "queue-cost",
+          "text": {
+            "pt-BR": "A fila cobra por pedido guardado.",
+            "en": "The queue charges per stored order."
+          }
+        },
+        {
+          "id": "spike-cost",
+          "text": {
+            "pt-BR": "O pico de tráfego encarece o sistema.",
+            "en": "The traffic peak makes the system more expensive."
+          }
+        }
+      ],
+      "correctOptionId": "too-many",
+      "explanation": {
+        "pt-BR": "Workers a mais não ajudam: quem limita a gravação é o banco. Use só o que o banco consegue acompanhar.",
+        "en": "Extra workers do not help: the database is what limits writing. Use only what the database can keep up with."
+      }
+    }
+  },
+  "justifyQuestion": {
+    "id": "l3-justify",
+    "conceptId": "async-queue",
+    "prompt": {
+      "pt-BR": "Por que nenhum pedido se perdeu no pico?",
+      "en": "Why was no order lost during the peak?"
+    },
+    "options": [
+      {
+        "id": "buffered",
+        "text": {
+          "pt-BR": "A fila guardou os pedidos e os workers entregaram ao banco no ritmo que ele aguenta.",
+          "en": "The queue held the orders and the workers delivered them to the database at a pace it can take."
+        }
+      },
+      {
+        "id": "db-faster",
+        "text": {
+          "pt-BR": "A fila aumentou a capacidade de gravação do banco.",
+          "en": "The queue increased the database's write capacity."
+        }
+      },
+      {
+        "id": "limiter-dropped",
+        "text": {
+          "pt-BR": "O rate limiter descartou os pedidos excedentes antes do banco.",
+          "en": "The rate limiter dropped the excess orders before the database."
+        }
+      }
+    ],
+    "correctOptionId": "buffered",
+    "explanation": {
+      "pt-BR": "A fila troca tempo por segurança: o banco continua gravando 400 por segundo, mas o pico vira espera em vez de perda. O preço é o pedido demorar para ser gravado.",
+      "en": "The queue trades time for safety: the database still writes 400 per second, but the peak becomes waiting instead of loss. The price is that the order takes a while to be written."
+    }
+  }
+}

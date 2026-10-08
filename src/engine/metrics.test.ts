@@ -4,7 +4,7 @@ import { LatencyHistogram, MetricsCollector } from './metrics';
 import { mulberry32 } from './prng';
 import { SloTracker, sloHolds } from './slo';
 import { makeBoard, makeNode } from './testing';
-import { TICKS_PER_SEC, type Metrics } from './types';
+import { SLO_MIN_SAMPLES, TICKS_PER_SEC, type Metrics } from './types';
 
 const BASE_METRICS: Metrics = {
   p99LatencyMs: 100,
@@ -66,8 +66,8 @@ describe('LatencyHistogram', () => {
 describe('MetricsCollector', () => {
   test('errorRate da janela esquece erros antigos, o total não', () => {
     const collector = new MetricsCollector('low');
-    collector.recordError();
-    collector.endTick();
+    for (let index = 0; index < SLO_MIN_SAMPLES; index += 1) collector.recordError();
+    expect(collector.endTick().errorRate).toBe(1);
 
     let windowed = collector.endTick();
     for (let tick = 0; tick < 10 * TICKS_PER_SEC; tick += 1) {
@@ -77,6 +77,18 @@ describe('MetricsCollector', () => {
 
     expect(windowed.errorRate).toBe(0);
     expect(collector.totals().errorRate).toBeGreaterThan(0);
+  });
+
+  test('janela com menos de SLO_MIN_SAMPLES respostas não acusa erro nem latência', () => {
+    const collector = new MetricsCollector('low');
+    for (let index = 0; index < SLO_MIN_SAMPLES - 1; index += 1) collector.recordError();
+
+    const sparse = collector.endTick();
+    collector.recordError();
+    const enough = collector.endTick();
+
+    expect(sparse.errorRate).toBe(0);
+    expect(enough.errorRate).toBe(1);
   });
 
   test('availability é a fração de segundos com erro dentro do limite', () => {
