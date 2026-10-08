@@ -175,6 +175,8 @@ export const questionSchema = z
 
 export type Question = z.infer<typeof questionSchema>;
 
+const questionPool = z.array(questionSchema).min(1);
+
 const levelShape = z.strictObject({
   schemaVersion: z.literal(LEVEL_SCHEMA_VERSION),
   id: slug,
@@ -195,10 +197,14 @@ const levelShape = z.strictObject({
   hints: z.array(localizedText).default([]),
   /** Fase que só abre algum tempo depois de outra ser concluída. */
   unlock: z.strictObject({ afterLevel: slug, delayHours: z.number().min(0) }).optional(),
-  predictQuestion: questionSchema,
+  /**
+   * Cada etapa tem um banco de perguntas: o jogo reveza entre elas, então errar e
+   * tentar de novo não repete a mesma pergunta.
+   */
+  predictQuestions: questionPool,
   /** Indexadas pela métrica cujo SLO foi violado. */
-  diagnoseQuestions: z.partialRecord(metricIdSchema, questionSchema),
-  justifyQuestion: questionSchema,
+  diagnoseQuestions: z.partialRecord(metricIdSchema, questionPool),
+  justifyQuestions: questionPool,
 });
 
 type LevelShape = z.infer<typeof levelShape>;
@@ -246,32 +252,35 @@ function checkEvents(level: LevelShape, nodeIds: ReadonlySet<string>, ctx: z.Ref
 
 function checkQuestions(level: LevelShape, ctx: z.RefinementCtx): void {
   const concepts = new Set(level.concepts);
-  const diagnose = Object.entries(level.diagnoseQuestions).map(
-    ([metric, question]) => [['diagnoseQuestions', metric], question] as const,
-  );
-  const questions = [
-    [['predictQuestion'], level.predictQuestion] as const,
-    ...diagnose,
-    [['justifyQuestion'], level.justifyQuestion] as const,
+  const pools: (readonly [readonly (string | number)[], readonly Question[]])[] = [
+    [['predictQuestions'], level.predictQuestions],
+    ...Object.entries(level.diagnoseQuestions).map(
+      ([metric, pool]) => [['diagnoseQuestions', metric], pool ?? []] as const,
+    ),
+    [['justifyQuestions'], level.justifyQuestions],
   ];
   const seenIds = new Set<string>();
-  for (const [path, question] of questions) {
-    if (!question) continue;
-    if (!concepts.has(question.conceptId)) {
-      ctx.addIssue({ code: 'custom', message: `Conceito fora da fase: ${question.conceptId}`, path: [...path, 'conceptId'] });
-    }
-    if (seenIds.has(question.id)) {
-      ctx.addIssue({ code: 'custom', message: `Pergunta com id repetido: ${question.id}`, path: [...path, 'id'] });
-    }
-    seenIds.add(question.id);
-  }
-  if (level.justifyQuestion.options.length !== JUSTIFY_OPTION_COUNT) {
-    ctx.addIssue({
-      code: 'custom',
-      message: `A pergunta de justificativa tem exatamente ${JUSTIFY_OPTION_COUNT} opções.`,
-      path: ['justifyQuestion', 'options'],
+  for (const [poolPath, pool] of pools) {
+    pool.forEach((question, index) => {
+      const path = [...poolPath, index];
+      if (!concepts.has(question.conceptId)) {
+        ctx.addIssue({ code: 'custom', message: `Conceito fora da fase: ${question.conceptId}`, path: [...path, 'conceptId'] });
+      }
+      if (seenIds.has(question.id)) {
+        ctx.addIssue({ code: 'custom', message: `Pergunta com id repetido: ${question.id}`, path: [...path, 'id'] });
+      }
+      seenIds.add(question.id);
     });
   }
+  level.justifyQuestions.forEach((question, index) => {
+    if (question.options.length !== JUSTIFY_OPTION_COUNT) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `A pergunta de justificativa tem exatamente ${JUSTIFY_OPTION_COUNT} opções.`,
+        path: ['justifyQuestions', index, 'options'],
+      });
+    }
+  });
   level.slos.forEach((slo, index) => {
     if (!level.diagnoseQuestions[slo.metric]) {
       ctx.addIssue({

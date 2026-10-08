@@ -192,193 +192,390 @@
       "en": "A server at exactly full capacity still answers, but slowly. Leave headroom."
     }
   ],
-  "predictQuestion": {
-    "id": "l1-predict",
-    "conceptId": "horizontal-scaling",
-    "prompt": {
-      "pt-BR": "O tráfego vai subir de 200 para 2000 rps. O que quebra primeiro?",
-      "en": "Traffic will climb from 200 to 2000 rps. What breaks first?"
-    },
-    "options": [
-      {
-        "id": "app",
-        "text": {
-          "pt-BR": "O servidor de aplicação, que só processa 500 rps.",
-          "en": "The app server, which only handles 500 rps."
-        }
-      },
-      {
-        "id": "db",
-        "text": {
-          "pt-BR": "O banco de dados, que fica sem capacidade.",
-          "en": "The database, which runs out of capacity."
-        }
-      },
-      {
-        "id": "buffer",
-        "text": {
-          "pt-BR": "Nada: o buffer do servidor segura o excedente até o tráfego baixar.",
-          "en": "Nothing: the server buffer holds the excess until traffic drops."
-        }
-      },
-      {
-        "id": "client",
-        "text": {
-          "pt-BR": "A origem do tráfego, que não consegue enviar tanto.",
-          "en": "The traffic source, which cannot send that much."
-        }
-      }
-    ],
-    "correctOptionId": "app",
-    "explanation": {
-      "pt-BR": "O servidor satura em 500 rps, bem antes dos 5000 do banco. O buffer só adia: com a entrada sempre maior que a saída, ele enche e o resto é descartado.",
-      "en": "The server saturates at 500 rps, long before the database's 5000. The buffer only delays it: with input always above output, it fills up and the rest is dropped."
-    }
-  },
-  "diagnoseQuestions": {
-    "p99LatencyMs": {
-      "id": "l1-diagnose-latency",
+  "predictQuestions": [
+    {
+      "id": "l1-predict",
       "conceptId": "horizontal-scaling",
       "prompt": {
-        "pt-BR": "A latência p99 estourou o limite. Qual é a causa?",
-        "en": "p99 latency went over the limit. What is the cause?"
+        "pt-BR": "O tráfego vai subir de 200 para 2000 rps. O que quebra primeiro?",
+        "en": "Traffic will climb from 200 to 2000 rps. What breaks first?"
       },
       "options": [
         {
-          "id": "utilization",
+          "id": "app",
           "text": {
-            "pt-BR": "Os servidores estão perto de 100% de utilização e as requisições esperam na fila.",
-            "en": "The servers are close to 100% utilization and requests wait in line."
+            "pt-BR": "O servidor de aplicação, que só processa 500 rps.",
+            "en": "The app server, which only handles 500 rps."
           }
         },
         {
-          "id": "db-slow",
+          "id": "db",
           "text": {
-            "pt-BR": "O banco ficou lento por causa das escritas.",
-            "en": "The database got slow because of the writes."
+            "pt-BR": "O banco de dados, que fica sem capacidade.",
+            "en": "The database, which runs out of capacity."
           }
         },
         {
-          "id": "lb-hop",
+          "id": "buffer",
           "text": {
-            "pt-BR": "O load balancer acrescenta um salto e isso domina a latência.",
-            "en": "The load balancer adds a hop and that dominates latency."
+            "pt-BR": "Nada: o buffer do servidor segura o excedente até o tráfego baixar.",
+            "en": "Nothing: the server buffer holds the excess until traffic drops."
+          }
+        },
+        {
+          "id": "client",
+          "text": {
+            "pt-BR": "A origem do tráfego, que não consegue enviar tanto.",
+            "en": "The traffic source, which cannot send that much."
           }
         }
       ],
-      "correctOptionId": "utilization",
+      "correctOptionId": "app",
       "explanation": {
-        "pt-BR": "A latência cresce rápido quando a utilização se aproxima de 100%: a 80% ela é 5 vezes a base, a 95% é 20 vezes. Ela dispara antes de aparecer o primeiro erro.",
-        "en": "Latency grows fast as utilization approaches 100%: at 80% it is 5 times the base, at 95% it is 20 times. It spikes before the first error shows up."
+        "pt-BR": "O servidor satura em 500 rps, bem antes dos 5000 do banco. O buffer só adia: com a entrada sempre maior que a saída, ele enche e o resto é descartado.",
+        "en": "The server saturates at 500 rps, long before the database's 5000. The buffer only delays it: with input always above output, it fills up and the rest is dropped."
       }
     },
-    "errorRate": {
-      "id": "l1-diagnose-errors",
+    {
+      "id": "l1-predict-threshold",
+      "conceptId": "horizontal-scaling",
+      "prompt": {
+        "pt-BR": "Com um servidor de 500 rps, em que ponto da subida as requisições começam a ser descartadas?",
+        "en": "With one 500 rps server, at what point of the climb do requests start being dropped?"
+      },
+      "options": [
+        {
+          "id": "just-above",
+          "text": {
+            "pt-BR": "Pouco acima de 500 rps, assim que o buffer enche.",
+            "en": "Just above 500 rps, as soon as the buffer fills."
+          }
+        },
+        {
+          "id": "at-peak",
+          "text": {
+            "pt-BR": "Só no pico, em 2000 rps.",
+            "en": "Only at the peak, at 2000 rps."
+          }
+        },
+        {
+          "id": "at-db",
+          "text": {
+            "pt-BR": "Em 5000 rps, o limite do banco.",
+            "en": "At 5000 rps, the database limit."
+          }
+        },
+        {
+          "id": "at-start",
+          "text": {
+            "pt-BR": "Desde o início, em 200 rps.",
+            "en": "From the start, at 200 rps."
+          }
+        }
+      ],
+      "correctOptionId": "just-above",
+      "explanation": {
+        "pt-BR": "Passou de 500 rps, o excedente vai para o buffer. Ele guarda 50 requisições e enche em menos de um segundo; daí em diante tudo que sobra é descartado.",
+        "en": "Past 500 rps the excess goes to the buffer. It holds 50 requests and fills in under a second; from then on everything left over is dropped."
+      }
+    }
+  ],
+  "diagnoseQuestions": {
+    "p99LatencyMs": [
+      {
+        "id": "l1-diagnose-latency",
+        "conceptId": "horizontal-scaling",
+        "prompt": {
+          "pt-BR": "A latência p99 estourou o limite. Qual é a causa?",
+          "en": "p99 latency went over the limit. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "utilization",
+            "text": {
+              "pt-BR": "Os servidores estão perto de 100% de utilização e as requisições esperam na fila.",
+              "en": "The servers are close to 100% utilization and requests wait in line."
+            }
+          },
+          {
+            "id": "db-slow",
+            "text": {
+              "pt-BR": "O banco ficou lento por causa das escritas.",
+              "en": "The database got slow because of the writes."
+            }
+          },
+          {
+            "id": "lb-hop",
+            "text": {
+              "pt-BR": "O load balancer acrescenta um salto e isso domina a latência.",
+              "en": "The load balancer adds a hop and that dominates latency."
+            }
+          }
+        ],
+        "correctOptionId": "utilization",
+        "explanation": {
+          "pt-BR": "A latência cresce rápido quando a utilização se aproxima de 100%: a 80% ela é 5 vezes a base, a 95% é 20 vezes. Ela dispara antes de aparecer o primeiro erro.",
+          "en": "Latency grows fast as utilization approaches 100%: at 80% it is 5 times the base, at 95% it is 20 times. It spikes before the first error shows up."
+        }
+      },
+      {
+        "id": "l1-diagnose-latency-before-errors",
+        "conceptId": "load-balancing",
+        "prompt": {
+          "pt-BR": "A latência dispara antes de aparecer qualquer erro. Por quê?",
+          "en": "Latency spikes before any error shows up. Why?"
+        },
+        "options": [
+          {
+            "id": "waiting",
+            "text": {
+              "pt-BR": "Com utilização alta as requisições esperam a vez, mesmo sem nenhuma ser descartada.",
+              "en": "At high utilization requests wait their turn, even with none being dropped."
+            }
+          },
+          {
+            "id": "together",
+            "text": {
+              "pt-BR": "Latência e erro sempre sobem no mesmo instante.",
+              "en": "Latency and errors always rise at the same moment."
+            }
+          },
+          {
+            "id": "buffer-fast",
+            "text": {
+              "pt-BR": "O buffer acelera as requisições quando enche.",
+              "en": "The buffer speeds requests up when it fills."
+            }
+          }
+        ],
+        "correctOptionId": "waiting",
+        "explanation": {
+          "pt-BR": "Latência é o primeiro sintoma de saturação e erro é o último. Um servidor a 95% responde tudo, só que 20 vezes mais devagar. Repartir a carga baixa a utilização de cada um.",
+          "en": "Latency is the first symptom of saturation and errors are the last. A server at 95% answers everything, just 20 times slower. Splitting the load lowers each one's utilization."
+        }
+      }
+    ],
+    "errorRate": [
+      {
+        "id": "l1-diagnose-errors",
+        "conceptId": "load-balancing",
+        "prompt": {
+          "pt-BR": "Requisições começaram a falhar. Qual é a causa?",
+          "en": "Requests started failing. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "overflow",
+            "text": {
+              "pt-BR": "Chega mais tráfego a um servidor do que ele processa; o buffer enche e o resto é descartado.",
+              "en": "More traffic reaches a server than it can process; the buffer fills up and the rest is dropped."
+            }
+          },
+          {
+            "id": "db-reject",
+            "text": {
+              "pt-BR": "O banco está recusando conexões.",
+              "en": "The database is refusing connections."
+            }
+          },
+          {
+            "id": "random",
+            "text": {
+              "pt-BR": "Falhas aleatórias de rede, que somem se rodar de novo.",
+              "en": "Random network failures that go away if you run it again."
+            }
+          }
+        ],
+        "correctOptionId": "overflow",
+        "explanation": {
+          "pt-BR": "Erro aqui é descarte por saturação. Capacidade parada não ajuda: servidor que não recebe tráfego do load balancer não alivia os que recebem.",
+          "en": "Errors here are drops from saturation. Idle capacity does not help: a server that gets no traffic from the load balancer does not relieve the ones that do."
+        }
+      },
+      {
+        "id": "l1-diagnose-errors-buffer",
+        "conceptId": "horizontal-scaling",
+        "prompt": {
+          "pt-BR": "O buffer do servidor não evitou os descartes. Por quê?",
+          "en": "The server buffer did not prevent the drops. Why?"
+        },
+        "options": [
+          {
+            "id": "sustained",
+            "text": {
+              "pt-BR": "Buffer absorve pico curto. Com a entrada sempre acima da capacidade, ele enche e continua cheio.",
+              "en": "A buffer absorbs a short burst. With input always above capacity, it fills up and stays full."
+            }
+          },
+          {
+            "id": "off",
+            "text": {
+              "pt-BR": "O buffer só funciona com load balancer.",
+              "en": "The buffer only works with a load balancer."
+            }
+          },
+          {
+            "id": "writes-only",
+            "text": {
+              "pt-BR": "O buffer só guarda escritas.",
+              "en": "The buffer only holds writes."
+            }
+          }
+        ],
+        "correctOptionId": "sustained",
+        "explanation": {
+          "pt-BR": "Buffer troca tempo por espaço e só ajuda se o excesso acabar. Tráfego que sobe e fica alto pede mais capacidade, não mais fila.",
+          "en": "A buffer trades time for space and only helps if the excess ends. Traffic that climbs and stays high needs more capacity, not more queue."
+        }
+      }
+    ],
+    "costTier": [
+      {
+        "id": "l1-diagnose-cost",
+        "conceptId": "horizontal-scaling",
+        "prompt": {
+          "pt-BR": "O custo passou da faixa permitida. Qual é a causa?",
+          "en": "Cost went above the allowed tier. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "oversized",
+            "text": {
+              "pt-BR": "Há mais servidores do que o pico exige.",
+              "en": "There are more servers than the peak requires."
+            }
+          },
+          {
+            "id": "lb-cost",
+            "text": {
+              "pt-BR": "O load balancer é a peça mais cara.",
+              "en": "The load balancer is the most expensive piece."
+            }
+          },
+          {
+            "id": "traffic-cost",
+            "text": {
+              "pt-BR": "O custo sobe junto com o tráfego.",
+              "en": "Cost rises together with traffic."
+            }
+          }
+        ],
+        "correctOptionId": "oversized",
+        "explanation": {
+          "pt-BR": "Cada servidor custa mesmo parado. Dimensione para o pico com folga, não para o máximo que a paleta permite.",
+          "en": "Every server costs money even when idle. Size for the peak with headroom, not for the maximum the palette allows."
+        }
+      },
+      {
+        "id": "l1-diagnose-cost-count",
+        "conceptId": "horizontal-scaling",
+        "prompt": {
+          "pt-BR": "Quantos servidores de 500 rps o pico de 2000 rps pede?",
+          "en": "How many 500 rps servers does the 2000 rps peak need?"
+        },
+        "options": [
+          {
+            "id": "five",
+            "text": {
+              "pt-BR": "Cinco: quatro dão a conta exata, sem folga; com cinco cada um fica em 80%.",
+              "en": "Five: four match it exactly, with no headroom; with five each one sits at 80%."
+            }
+          },
+          {
+            "id": "four",
+            "text": {
+              "pt-BR": "Quatro: 4 × 500 = 2000 e folga não importa.",
+              "en": "Four: 4 × 500 = 2000 and headroom does not matter."
+            }
+          },
+          {
+            "id": "seven",
+            "text": {
+              "pt-BR": "Sete: o máximo disponível é sempre o mais seguro.",
+              "en": "Seven: the maximum available is always the safest."
+            }
+          }
+        ],
+        "correctOptionId": "five",
+        "explanation": {
+          "pt-BR": "Dimensionar é achar o mínimo com folga. Quatro deixam todos a 100%, com latência no teto; sete pagam por capacidade parada.",
+          "en": "Sizing means finding the minimum with headroom. Four leave every server at 100%, with latency at the ceiling; seven pay for idle capacity."
+        }
+      }
+    ]
+  },
+  "justifyQuestions": [
+    {
+      "id": "l1-justify",
       "conceptId": "load-balancing",
       "prompt": {
-        "pt-BR": "Requisições começaram a falhar. Qual é a causa?",
-        "en": "Requests started failing. What is the cause?"
+        "pt-BR": "Por que funcionou?",
+        "en": "Why did it work?"
       },
       "options": [
         {
-          "id": "overflow",
+          "id": "split",
           "text": {
-            "pt-BR": "Chega mais tráfego a um servidor do que ele processa; o buffer enche e o resto é descartado.",
-            "en": "More traffic reaches a server than it can process; the buffer fills up and the rest is dropped."
+            "pt-BR": "O load balancer repartiu o tráfego, e cada servidor ficou abaixo da própria capacidade.",
+            "en": "The load balancer split the traffic, and each server stayed below its own capacity."
           }
         },
         {
-          "id": "db-reject",
+          "id": "faster",
           "text": {
-            "pt-BR": "O banco está recusando conexões.",
-            "en": "The database is refusing connections."
+            "pt-BR": "O load balancer deixou cada servidor mais rápido.",
+            "en": "The load balancer made each server faster."
           }
         },
         {
-          "id": "random",
+          "id": "db-capacity",
           "text": {
-            "pt-BR": "Falhas aleatórias de rede, que somem se rodar de novo.",
-            "en": "Random network failures that go away if you run it again."
+            "pt-BR": "Mais servidores aumentaram a capacidade do banco.",
+            "en": "More servers increased the database capacity."
           }
         }
       ],
-      "correctOptionId": "overflow",
+      "correctOptionId": "split",
       "explanation": {
-        "pt-BR": "Erro aqui é descarte por saturação. Capacidade parada não ajuda: servidor que não recebe tráfego do load balancer não alivia os que recebem.",
-        "en": "Errors here are drops from saturation. Idle capacity does not help: a server that gets no traffic from the load balancer does not relieve the ones that do."
+        "pt-BR": "Escala horizontal soma capacidade; o load balancer é o que torna essa soma utilizável. Nenhum servidor ficou mais rápido: cada um só passou a receber uma fração do tráfego.",
+        "en": "Horizontal scaling adds capacity; the load balancer is what makes that sum usable. No server got faster: each one just started receiving a fraction of the traffic."
       }
     },
-    "costTier": {
-      "id": "l1-diagnose-cost",
+    {
+      "id": "l1-justify-headroom",
       "conceptId": "horizontal-scaling",
       "prompt": {
-        "pt-BR": "O custo passou da faixa permitida. Qual é a causa?",
-        "en": "Cost went above the allowed tier. What is the cause?"
+        "pt-BR": "Quatro servidores somam exatamente 2000 rps. Por que isso não bastaria?",
+        "en": "Four servers add up to exactly 2000 rps. Why would that not be enough?"
       },
       "options": [
         {
-          "id": "oversized",
+          "id": "headroom",
           "text": {
-            "pt-BR": "Há mais servidores do que o pico exige.",
-            "en": "There are more servers than the peak requires."
+            "pt-BR": "A 100% de utilização a latência bate no teto: é preciso folga.",
+            "en": "At 100% utilization latency hits the ceiling: you need headroom."
           }
         },
         {
-          "id": "lb-cost",
+          "id": "lb-eats",
           "text": {
-            "pt-BR": "O load balancer é a peça mais cara.",
-            "en": "The load balancer is the most expensive piece."
+            "pt-BR": "O load balancer consome parte da capacidade dos servidores.",
+            "en": "The load balancer uses up part of the servers' capacity."
           }
         },
         {
-          "id": "traffic-cost",
+          "id": "spare",
           "text": {
-            "pt-BR": "O custo sobe junto com o tráfego.",
-            "en": "Cost rises together with traffic."
+            "pt-BR": "Um servidor sempre fica reservado para falhas.",
+            "en": "One server is always kept in reserve for failures."
           }
         }
       ],
-      "correctOptionId": "oversized",
+      "correctOptionId": "headroom",
       "explanation": {
-        "pt-BR": "Cada servidor custa mesmo parado. Dimensione para o pico com folga, não para o máximo que a paleta permite.",
-        "en": "Every server costs money even when idle. Size for the peak with headroom, not for the maximum the palette allows."
+        "pt-BR": "Capacidade exata atende o volume, mas não o tempo de resposta. A latência cresce com base / (1 - utilização): quanto mais perto de 100%, pior.",
+        "en": "Exact capacity serves the volume, but not the response time. Latency grows as base / (1 - utilization): the closer to 100%, the worse."
       }
     }
-  },
-  "justifyQuestion": {
-    "id": "l1-justify",
-    "conceptId": "load-balancing",
-    "prompt": {
-      "pt-BR": "Por que funcionou?",
-      "en": "Why did it work?"
-    },
-    "options": [
-      {
-        "id": "split",
-        "text": {
-          "pt-BR": "O load balancer repartiu o tráfego, e cada servidor ficou abaixo da própria capacidade.",
-          "en": "The load balancer split the traffic, and each server stayed below its own capacity."
-        }
-      },
-      {
-        "id": "faster",
-        "text": {
-          "pt-BR": "O load balancer deixou cada servidor mais rápido.",
-          "en": "The load balancer made each server faster."
-        }
-      },
-      {
-        "id": "db-capacity",
-        "text": {
-          "pt-BR": "Mais servidores aumentaram a capacidade do banco.",
-          "en": "More servers increased the database capacity."
-        }
-      }
-    ],
-    "correctOptionId": "split",
-    "explanation": {
-      "pt-BR": "Escala horizontal soma capacidade; o load balancer é o que torna essa soma utilizável. Nenhum servidor ficou mais rápido: cada um só passou a receber uma fração do tráfego.",
-      "en": "Horizontal scaling adds capacity; the load balancer is what makes that sum usable. No server got faster: each one just started receiving a fraction of the traffic."
-    }
-  }
+  ]
 }

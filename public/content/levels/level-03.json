@@ -310,229 +310,464 @@
     "showConcepts": true
   },
   "hints": [],
-  "predictQuestion": {
-    "id": "l3-predict",
-    "conceptId": "async-queue",
-    "prompt": {
-      "pt-BR": "Os pedidos vão multiplicar por dez por 8 segundos. O que quebra primeiro?",
-      "en": "Orders will grow tenfold for 8 seconds. What breaks first?"
-    },
-    "options": [
-      {
-        "id": "primary",
-        "text": {
-          "pt-BR": "O banco primário: chegam mais pedidos do que ele grava, e o excedente é descartado.",
-          "en": "The primary database: more orders arrive than it can write, and the excess is dropped."
-        }
+  "predictQuestions": [
+    {
+      "id": "l3-predict",
+      "conceptId": "async-queue",
+      "prompt": {
+        "pt-BR": "Os pedidos vão multiplicar por dez por 8 segundos. O que quebra primeiro?",
+        "en": "Orders will grow tenfold for 8 seconds. What breaks first?"
       },
-      {
-        "id": "apps",
-        "text": {
-          "pt-BR": "Os servidores de aplicação.",
-          "en": "The app servers."
+      "options": [
+        {
+          "id": "primary",
+          "text": {
+            "pt-BR": "O banco primário: chegam mais pedidos do que ele grava, e o excedente é descartado.",
+            "en": "The primary database: more orders arrive than it can write, and the excess is dropped."
+          }
+        },
+        {
+          "id": "apps",
+          "text": {
+            "pt-BR": "Os servidores de aplicação.",
+            "en": "The app servers."
+          }
+        },
+        {
+          "id": "cache",
+          "text": {
+            "pt-BR": "O cache, que não aguenta tanta leitura.",
+            "en": "The cache, which cannot take that many reads."
+          }
+        },
+        {
+          "id": "replica",
+          "text": {
+            "pt-BR": "A réplica de leitura.",
+            "en": "The read replica."
+          }
         }
-      },
-      {
-        "id": "cache",
-        "text": {
-          "pt-BR": "O cache, que não aguenta tanta leitura.",
-          "en": "The cache, which cannot take that many reads."
-        }
-      },
-      {
-        "id": "replica",
-        "text": {
-          "pt-BR": "A réplica de leitura.",
-          "en": "The read replica."
-        }
+      ],
+      "correctOptionId": "primary",
+      "explanation": {
+        "pt-BR": "No pico chegam 1200 pedidos por segundo e o primário grava 400. Os servidores somam 6000 rps e o cache responde quase todas as leituras: sobra para o banco de escrita.",
+        "en": "At the peak 1200 orders per second arrive and the primary writes 400. The servers add up to 6000 rps and the cache answers nearly every read: the write database takes the hit."
       }
-    ],
-    "correctOptionId": "primary",
-    "explanation": {
-      "pt-BR": "No pico chegam 1200 pedidos por segundo e o primário grava 400. Os servidores somam 6000 rps e o cache responde quase todas as leituras: sobra para o banco de escrita.",
-      "en": "At the peak 1200 orders per second arrive and the primary writes 400. The servers add up to 6000 rps and the cache answers nearly every read: the write database takes the hit."
+    },
+    {
+      "id": "l3-predict-bots",
+      "conceptId": "rate-limiting",
+      "prompt": {
+        "pt-BR": "Depois do pico de pedidos vêm 2500 bots por segundo lendo o catálogo. O que eles derrubam?",
+        "en": "After the order peak come 2500 bots per second reading the catalog. What do they take down?"
+      },
+      "options": [
+        {
+          "id": "replica",
+          "text": {
+            "pt-BR": "A réplica de leitura: bots pedem itens fora do cache e todos chegam nela.",
+            "en": "The read replica: bots ask for items outside the cache and all of them reach it."
+          }
+        },
+        {
+          "id": "cache",
+          "text": {
+            "pt-BR": "O cache, que transborda.",
+            "en": "The cache, which overflows."
+          }
+        },
+        {
+          "id": "primary",
+          "text": {
+            "pt-BR": "O banco primário, com escritas.",
+            "en": "The primary database, with writes."
+          }
+        },
+        {
+          "id": "nothing",
+          "text": {
+            "pt-BR": "Nada: o cache responde 80% das leituras.",
+            "en": "Nothing: the cache answers 80% of reads."
+          }
+        }
+      ],
+      "correctOptionId": "replica",
+      "explanation": {
+        "pt-BR": "Os 80% valem para o que os clientes pedem. Bot varre o catálogo inteiro, item por item: quase tudo é miss e segue para a réplica, que atende 800 rps.",
+        "en": "The 80% applies to what customers ask for. A bot sweeps the whole catalog, item by item: nearly everything is a miss and goes on to the replica, which serves 800 rps."
+      }
     }
-  },
+  ],
   "diagnoseQuestions": {
-    "lostWrites": {
-      "id": "l3-diagnose-lost",
-      "conceptId": "async-queue",
-      "prompt": {
-        "pt-BR": "Pedidos foram perdidos. Qual é a causa?",
-        "en": "Orders were lost. What is the cause?"
-      },
-      "options": [
-        {
-          "id": "faster-than-db",
-          "text": {
-            "pt-BR": "Escritas chegaram ao banco mais rápido do que ele grava, e o excedente foi descartado.",
-            "en": "Writes reached the database faster than it can store them, and the excess was dropped."
-          }
-        },
-        {
-          "id": "bots",
-          "text": {
-            "pt-BR": "Os bots apagaram pedidos.",
-            "en": "The bots deleted orders."
-          }
-        },
-        {
-          "id": "replica-lag",
-          "text": {
-            "pt-BR": "A réplica não recebeu os pedidos a tempo.",
-            "en": "The replica did not receive the orders in time."
-          }
-        }
-      ],
-      "correctOptionId": "faster-than-db",
-      "explanation": {
-        "pt-BR": "Vale para o tráfego direto e para workers: se a entrega ao banco passa da capacidade dele, o que não cabe some. A fila só protege se a saída dela respeitar o ritmo do banco.",
-        "en": "It holds for direct traffic and for workers alike: if delivery to the database exceeds its capacity, whatever does not fit is gone. The queue only protects if its output respects the database's pace."
-      }
-    },
-    "errorRate": {
-      "id": "l3-diagnose-errors",
-      "conceptId": "rate-limiting",
-      "prompt": {
-        "pt-BR": "Requisições legítimas começaram a falhar. Qual é a causa?",
-        "en": "Legitimate requests started failing. What is the cause?"
-      },
-      "options": [
-        {
-          "id": "shared-capacity",
-          "text": {
-            "pt-BR": "Tráfego que não deveria passar está ocupando a capacidade que os clientes usam.",
-            "en": "Traffic that should not get through is taking up the capacity customers use."
-          }
-        },
-        {
-          "id": "queue-errors",
-          "text": {
-            "pt-BR": "A fila devolve erro quando está ocupada.",
-            "en": "The queue returns an error when it is busy."
-          }
-        },
-        {
-          "id": "cache-down",
-          "text": {
-            "pt-BR": "O cache parou de responder.",
-            "en": "The cache stopped answering."
-          }
-        }
-      ],
-      "correctOptionId": "shared-capacity",
-      "explanation": {
-        "pt-BR": "Bot e cliente disputam a mesma capacidade. Os bots pedem itens que ninguém mais pede, furam o cache e lotam o banco de leitura; o cliente legítimo é descartado junto.",
-        "en": "Bots and customers compete for the same capacity. Bots ask for items nobody else asks for, pierce the cache and flood the read database; the legitimate customer gets dropped along with them."
-      }
-    },
-    "p99LatencyMs": {
-      "id": "l3-diagnose-latency",
-      "conceptId": "rate-limiting",
-      "prompt": {
-        "pt-BR": "A latência p99 estourou o limite. Qual é a causa?",
-        "en": "p99 latency went over the limit. What is the cause?"
-      },
-      "options": [
-        {
-          "id": "saturated-path",
-          "text": {
-            "pt-BR": "Um componente no caminho das requisições está saturado e elas esperam na fila dele.",
-            "en": "A component on the request path is saturated and requests wait in its line."
-          }
-        },
-        {
-          "id": "queue-wait",
-          "text": {
-            "pt-BR": "O cliente espera o worker terminar de gravar o pedido.",
-            "en": "The customer waits for the worker to finish writing the order."
-          }
-        },
-        {
-          "id": "limiter-slow",
-          "text": {
-            "pt-BR": "O rate limiter atrasa toda requisição.",
-            "en": "The rate limiter delays every request."
-          }
-        }
-      ],
-      "correctOptionId": "saturated-path",
-      "explanation": {
-        "pt-BR": "Veja qual componente está perto de 100%. A fila não entra na conta: ela confirma o pedido na hora e o worker grava depois, fora do tempo de resposta do cliente.",
-        "en": "Look for the component close to 100%. The queue is not part of it: it confirms the order right away and the worker writes later, outside the customer's response time."
-      }
-    },
-    "costTier": {
-      "id": "l3-diagnose-cost",
-      "conceptId": "async-queue",
-      "prompt": {
-        "pt-BR": "O custo passou da faixa permitida. Qual é a causa?",
-        "en": "Cost went above the allowed tier. What is the cause?"
-      },
-      "options": [
-        {
-          "id": "too-many",
-          "text": {
-            "pt-BR": "Há mais peças do que o problema exige.",
-            "en": "There are more pieces than the problem requires."
-          }
-        },
-        {
-          "id": "queue-cost",
-          "text": {
-            "pt-BR": "A fila cobra por pedido guardado.",
-            "en": "The queue charges per stored order."
-          }
-        },
-        {
-          "id": "spike-cost",
-          "text": {
-            "pt-BR": "O pico de tráfego encarece o sistema.",
-            "en": "The traffic peak makes the system more expensive."
-          }
-        }
-      ],
-      "correctOptionId": "too-many",
-      "explanation": {
-        "pt-BR": "Workers a mais não ajudam: quem limita a gravação é o banco. Use só o que o banco consegue acompanhar.",
-        "en": "Extra workers do not help: the database is what limits writing. Use only what the database can keep up with."
-      }
-    }
-  },
-  "justifyQuestion": {
-    "id": "l3-justify",
-    "conceptId": "async-queue",
-    "prompt": {
-      "pt-BR": "Por que nenhum pedido se perdeu no pico?",
-      "en": "Why was no order lost during the peak?"
-    },
-    "options": [
+    "lostWrites": [
       {
-        "id": "buffered",
-        "text": {
-          "pt-BR": "A fila guardou os pedidos e os workers entregaram ao banco no ritmo que ele aguenta.",
-          "en": "The queue held the orders and the workers delivered them to the database at a pace it can take."
+        "id": "l3-diagnose-lost",
+        "conceptId": "async-queue",
+        "prompt": {
+          "pt-BR": "Pedidos foram perdidos. Qual é a causa?",
+          "en": "Orders were lost. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "faster-than-db",
+            "text": {
+              "pt-BR": "Escritas chegaram ao banco mais rápido do que ele grava, e o excedente foi descartado.",
+              "en": "Writes reached the database faster than it can store them, and the excess was dropped."
+            }
+          },
+          {
+            "id": "bots",
+            "text": {
+              "pt-BR": "Os bots apagaram pedidos.",
+              "en": "The bots deleted orders."
+            }
+          },
+          {
+            "id": "replica-lag",
+            "text": {
+              "pt-BR": "A réplica não recebeu os pedidos a tempo.",
+              "en": "The replica did not receive the orders in time."
+            }
+          }
+        ],
+        "correctOptionId": "faster-than-db",
+        "explanation": {
+          "pt-BR": "Vale para o tráfego direto e para workers: se a entrega ao banco passa da capacidade dele, o que não cabe some. A fila só protege se a saída dela respeitar o ritmo do banco.",
+          "en": "It holds for direct traffic and for workers alike: if delivery to the database exceeds its capacity, whatever does not fit is gone. The queue only protects if its output respects the database's pace."
         }
       },
       {
-        "id": "db-faster",
-        "text": {
-          "pt-BR": "A fila aumentou a capacidade de gravação do banco.",
-          "en": "The queue increased the database's write capacity."
-        }
-      },
-      {
-        "id": "limiter-dropped",
-        "text": {
-          "pt-BR": "O rate limiter descartou os pedidos excedentes antes do banco.",
-          "en": "The rate limiter dropped the excess orders before the database."
+        "id": "l3-diagnose-lost-not-enough",
+        "conceptId": "async-queue",
+        "prompt": {
+          "pt-BR": "Qual destas mudanças, sozinha, não impede a perda de pedidos no pico?",
+          "en": "Which of these changes, on its own, does not prevent orders from being lost at the peak?"
+        },
+        "options": [
+          {
+            "id": "more-workers",
+            "text": {
+              "pt-BR": "Somar workers até eles entregarem mais do que o banco grava.",
+              "en": "Adding workers until they deliver more than the database can write."
+            }
+          },
+          {
+            "id": "queue-paced",
+            "text": {
+              "pt-BR": "Uma fila entre os servidores e o banco, com workers no ritmo dele.",
+              "en": "A queue between the servers and the database, with workers at its pace."
+            }
+          },
+          {
+            "id": "under-limit",
+            "text": {
+              "pt-BR": "Manter a entrega ao banco abaixo de 400 por segundo, guardando o resto.",
+              "en": "Keeping delivery to the database under 400 per second, holding the rest."
+            }
+          }
+        ],
+        "correctOptionId": "more-workers",
+        "explanation": {
+          "pt-BR": "O gargalo é o banco. Worker a mais só troca o lugar da perda: o pedido já foi confirmado ao cliente e some na porta do banco, o que é pior.",
+          "en": "The bottleneck is the database. Extra workers only move where the loss happens: the order was already confirmed to the customer and vanishes at the database door, which is worse."
         }
       }
     ],
-    "correctOptionId": "buffered",
-    "explanation": {
-      "pt-BR": "A fila troca tempo por segurança: o banco continua gravando 400 por segundo, mas o pico vira espera em vez de perda. O preço é o pedido demorar para ser gravado.",
-      "en": "The queue trades time for safety: the database still writes 400 per second, but the peak becomes waiting instead of loss. The price is that the order takes a while to be written."
+    "errorRate": [
+      {
+        "id": "l3-diagnose-errors",
+        "conceptId": "rate-limiting",
+        "prompt": {
+          "pt-BR": "Requisições legítimas começaram a falhar. Qual é a causa?",
+          "en": "Legitimate requests started failing. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "shared-capacity",
+            "text": {
+              "pt-BR": "Tráfego que não deveria passar está ocupando a capacidade que os clientes usam.",
+              "en": "Traffic that should not get through is taking up the capacity customers use."
+            }
+          },
+          {
+            "id": "queue-errors",
+            "text": {
+              "pt-BR": "A fila devolve erro quando está ocupada.",
+              "en": "The queue returns an error when it is busy."
+            }
+          },
+          {
+            "id": "cache-down",
+            "text": {
+              "pt-BR": "O cache parou de responder.",
+              "en": "The cache stopped answering."
+            }
+          }
+        ],
+        "correctOptionId": "shared-capacity",
+        "explanation": {
+          "pt-BR": "Bot e cliente disputam a mesma capacidade. Os bots pedem itens que ninguém mais pede, furam o cache e lotam o banco de leitura; o cliente legítimo é descartado junto.",
+          "en": "Bots and customers compete for the same capacity. Bots ask for items nobody else asks for, pierce the cache and flood the read database; the legitimate customer gets dropped along with them."
+        }
+      },
+      {
+        "id": "l3-diagnose-errors-cache-bots",
+        "conceptId": "rate-limiting",
+        "prompt": {
+          "pt-BR": "Por que o cache não protege o banco de leitura contra os bots?",
+          "en": "Why does the cache not protect the read database from the bots?"
+        },
+        "options": [
+          {
+            "id": "cold-keys",
+            "text": {
+              "pt-BR": "Bots pedem itens que ninguém pediu antes; não estão no cache e viram miss.",
+              "en": "Bots ask for items nobody asked for before; they are not in the cache and become misses."
+            }
+          },
+          {
+            "id": "refuses",
+            "text": {
+              "pt-BR": "O cache recusa requisições de bots.",
+              "en": "The cache refuses requests from bots."
+            }
+          },
+          {
+            "id": "bots-write",
+            "text": {
+              "pt-BR": "Bots escrevem, e cache só atende leitura.",
+              "en": "Bots write, and a cache only serves reads."
+            }
+          }
+        ],
+        "correctOptionId": "cold-keys",
+        "explanation": {
+          "pt-BR": "Cache funciona quando o acesso se repete. Varredura é o contrário: cada pedido é novo. Contra isso a defesa é limitar quem pede, não lembrar a resposta.",
+          "en": "A cache works when access repeats. A sweep is the opposite: every request is new. The defense against that is limiting who asks, not remembering the answer."
+        }
+      }
+    ],
+    "p99LatencyMs": [
+      {
+        "id": "l3-diagnose-latency",
+        "conceptId": "rate-limiting",
+        "prompt": {
+          "pt-BR": "A latência p99 estourou o limite. Qual é a causa?",
+          "en": "p99 latency went over the limit. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "saturated-path",
+            "text": {
+              "pt-BR": "Um componente no caminho das requisições está saturado e elas esperam na fila dele.",
+              "en": "A component on the request path is saturated and requests wait in its line."
+            }
+          },
+          {
+            "id": "queue-wait",
+            "text": {
+              "pt-BR": "O cliente espera o worker terminar de gravar o pedido.",
+              "en": "The customer waits for the worker to finish writing the order."
+            }
+          },
+          {
+            "id": "limiter-slow",
+            "text": {
+              "pt-BR": "O rate limiter atrasa toda requisição.",
+              "en": "The rate limiter delays every request."
+            }
+          }
+        ],
+        "correctOptionId": "saturated-path",
+        "explanation": {
+          "pt-BR": "Veja qual componente está perto de 100%. A fila não entra na conta: ela confirma o pedido na hora e o worker grava depois, fora do tempo de resposta do cliente.",
+          "en": "Look for the component close to 100%. The queue is not part of it: it confirms the order right away and the worker writes later, outside the customer's response time."
+        }
+      },
+      {
+        "id": "l3-diagnose-latency-queue",
+        "conceptId": "async-queue",
+        "prompt": {
+          "pt-BR": "A fila deixa o pedido mais lento para o cliente?",
+          "en": "Does the queue make the order slower for the customer?"
+        },
+        "options": [
+          {
+            "id": "no-ack",
+            "text": {
+              "pt-BR": "Não: ela confirma na hora. Quem espera é a gravação no banco, depois.",
+              "en": "No: it confirms right away. What waits is the write to the database, later."
+            }
+          },
+          {
+            "id": "yes-worker",
+            "text": {
+              "pt-BR": "Sim: o cliente espera o worker gravar.",
+              "en": "Yes: the customer waits for the worker to write."
+            }
+          },
+          {
+            "id": "yes-always",
+            "text": {
+              "pt-BR": "Sim: toda fila soma o tempo de espera à resposta.",
+              "en": "Yes: every queue adds its waiting time to the response."
+            }
+          }
+        ],
+        "correctOptionId": "no-ack",
+        "explanation": {
+          "pt-BR": "Assíncrono quer dizer isso: a resposta não espera o trabalho. Se a latência está alta, procure outro componente saturado no caminho síncrono.",
+          "en": "That is what asynchronous means: the response does not wait for the work. If latency is high, look for another saturated component on the synchronous path."
+        }
+      }
+    ],
+    "costTier": [
+      {
+        "id": "l3-diagnose-cost",
+        "conceptId": "async-queue",
+        "prompt": {
+          "pt-BR": "O custo passou da faixa permitida. Qual é a causa?",
+          "en": "Cost went above the allowed tier. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "too-many",
+            "text": {
+              "pt-BR": "Há mais peças do que o problema exige.",
+              "en": "There are more pieces than the problem requires."
+            }
+          },
+          {
+            "id": "queue-cost",
+            "text": {
+              "pt-BR": "A fila cobra por pedido guardado.",
+              "en": "The queue charges per stored order."
+            }
+          },
+          {
+            "id": "spike-cost",
+            "text": {
+              "pt-BR": "O pico de tráfego encarece o sistema.",
+              "en": "The traffic peak makes the system more expensive."
+            }
+          }
+        ],
+        "correctOptionId": "too-many",
+        "explanation": {
+          "pt-BR": "Workers a mais não ajudam: quem limita a gravação é o banco. Use só o que o banco consegue acompanhar.",
+          "en": "Extra workers do not help: the database is what limits writing. Use only what the database can keep up with."
+        }
+      },
+      {
+        "id": "l3-diagnose-cost-cheap-shield",
+        "conceptId": "rate-limiting",
+        "prompt": {
+          "pt-BR": "Qual peça barata reduz a carga sobre todas as outras durante a onda de bots?",
+          "en": "Which cheap piece reduces the load on all the others during the bot wave?"
+        },
+        "options": [
+          {
+            "id": "limiter",
+            "text": {
+              "pt-BR": "O rate limiter, na entrada: o que ele barra não chega a mais nada.",
+              "en": "The rate limiter, at the entrance: whatever it stops reaches nothing else."
+            }
+          },
+          {
+            "id": "worker",
+            "text": {
+              "pt-BR": "Mais um worker.",
+              "en": "One more worker."
+            }
+          },
+          {
+            "id": "second-queue",
+            "text": {
+              "pt-BR": "Uma segunda fila.",
+              "en": "A second queue."
+            }
+          }
+        ],
+        "correctOptionId": "limiter",
+        "explanation": {
+          "pt-BR": "Barrar cedo é o mais barato que existe: cada requisição recusada na entrada poupa load balancer, servidor, cache e banco.",
+          "en": "Stopping early is as cheap as it gets: every request refused at the entrance spares the load balancer, the server, the cache and the database."
+        }
+      }
+    ]
+  },
+  "justifyQuestions": [
+    {
+      "id": "l3-justify",
+      "conceptId": "async-queue",
+      "prompt": {
+        "pt-BR": "Por que nenhum pedido se perdeu no pico?",
+        "en": "Why was no order lost during the peak?"
+      },
+      "options": [
+        {
+          "id": "buffered",
+          "text": {
+            "pt-BR": "A fila guardou os pedidos e os workers entregaram ao banco no ritmo que ele aguenta.",
+            "en": "The queue held the orders and the workers delivered them to the database at a pace it can take."
+          }
+        },
+        {
+          "id": "db-faster",
+          "text": {
+            "pt-BR": "A fila aumentou a capacidade de gravação do banco.",
+            "en": "The queue increased the database's write capacity."
+          }
+        },
+        {
+          "id": "limiter-dropped",
+          "text": {
+            "pt-BR": "O rate limiter descartou os pedidos excedentes antes do banco.",
+            "en": "The rate limiter dropped the excess orders before the database."
+          }
+        }
+      ],
+      "correctOptionId": "buffered",
+      "explanation": {
+        "pt-BR": "A fila troca tempo por segurança: o banco continua gravando 400 por segundo, mas o pico vira espera em vez de perda. O preço é o pedido demorar para ser gravado.",
+        "en": "The queue trades time for safety: the database still writes 400 per second, but the peak becomes waiting instead of loss. The price is that the order takes a while to be written."
+      }
+    },
+    {
+      "id": "l3-justify-limiter-role",
+      "conceptId": "rate-limiting",
+      "prompt": {
+        "pt-BR": "O que o rate limiter fez pelos clientes legítimos?",
+        "en": "What did the rate limiter do for legitimate customers?"
+      },
+      "options": [
+        {
+          "id": "freed",
+          "text": {
+            "pt-BR": "Barrou o excesso de bots e deixou a capacidade de leitura livre para eles.",
+            "en": "It stopped the excess bots and left the read capacity free for them."
+          }
+        },
+        {
+          "id": "faster",
+          "text": {
+            "pt-BR": "Respondeu as leituras deles mais rápido.",
+            "en": "It answered their reads faster."
+          }
+        },
+        {
+          "id": "queued",
+          "text": {
+            "pt-BR": "Guardou as requisições deles numa fila.",
+            "en": "It held their requests in a queue."
+          }
+        }
+      ],
+      "correctOptionId": "freed",
+      "explanation": {
+        "pt-BR": "O rate limiter não acelera nada. Ele protege por subtração: tira da frente o tráfego que ocuparia a capacidade de quem importa.",
+        "en": "The rate limiter speeds nothing up. It protects by subtraction: it removes the traffic that would take up the capacity of those who matter."
+      }
     }
-  }
+  ]
 }

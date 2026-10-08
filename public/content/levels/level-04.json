@@ -316,265 +316,538 @@
     "afterLevel": "level-03",
     "delayHours": 24
   },
-  "predictQuestion": {
-    "id": "l4-predict",
-    "conceptId": "caching",
-    "prompt": {
-      "pt-BR": "O tráfego vai subir de 200 para 2400 rps: 80% leitura, 15% escrita, 5% bots. O que quebra primeiro?",
-      "en": "Traffic will climb from 200 to 2400 rps: 80% reads, 15% writes, 5% bots. What breaks first?"
+  "predictQuestions": [
+    {
+      "id": "l4-predict",
+      "conceptId": "caching",
+      "prompt": {
+        "pt-BR": "O tráfego vai subir de 200 para 2400 rps: 80% leitura, 15% escrita, 5% bots. O que quebra primeiro?",
+        "en": "Traffic will climb from 200 to 2400 rps: 80% reads, 15% writes, 5% bots. What breaks first?"
+      },
+      "options": [
+        {
+          "id": "db",
+          "text": {
+            "pt-BR": "O banco, que recebe leituras e escritas e satura em 300 rps.",
+            "en": "The database, which takes reads and writes and saturates at 300 rps."
+          }
+        },
+        {
+          "id": "app",
+          "text": {
+            "pt-BR": "O servidor de aplicação, que satura em 800 rps.",
+            "en": "The app server, which saturates at 800 rps."
+          }
+        },
+        {
+          "id": "bots",
+          "text": {
+            "pt-BR": "Os bots derrubam tudo logo no início.",
+            "en": "The bots take everything down right at the start."
+          }
+        },
+        {
+          "id": "writes-only",
+          "text": {
+            "pt-BR": "Só as escritas: 15% do pico já passa do que o banco grava.",
+            "en": "Only the writes: 15% of the peak is already more than the database can store."
+          }
+        }
+      ],
+      "correctOptionId": "db",
+      "explanation": {
+        "pt-BR": "Tudo que passa pelo servidor termina no banco, e ele satura em 300 rps, antes dos 800 do servidor. Quase toda essa carga é leitura repetida. Resolver o banco só expõe o próximo gargalo.",
+        "en": "Everything that goes through the server ends at the database, and it saturates at 300 rps, before the server's 800. Nearly all of that load is repeated reads. Fixing the database only exposes the next bottleneck."
+      }
     },
-    "options": [
+    {
+      "id": "l4-predict-relief",
+      "conceptId": "read-replicas",
+      "prompt": {
+        "pt-BR": "Hoje leituras e escritas vão ao mesmo banco de 300 rps. Com 80% de leitura, o que mais alivia esse banco?",
+        "en": "Today reads and writes go to the same 300 rps database. With 80% reads, what relieves that database the most?"
+      },
+      "options": [
+        {
+          "id": "move-reads",
+          "text": {
+            "pt-BR": "Tirar as leituras dele: outra camada atende 80% do tráfego.",
+            "en": "Taking the reads off it: another tier serves 80% of the traffic."
+          }
+        },
+        {
+          "id": "more-apps",
+          "text": {
+            "pt-BR": "Mais servidores de aplicação.",
+            "en": "More app servers."
+          }
+        },
+        {
+          "id": "queue-reads",
+          "text": {
+            "pt-BR": "Uma fila para as leituras.",
+            "en": "A queue for the reads."
+          }
+        },
+        {
+          "id": "lb-db",
+          "text": {
+            "pt-BR": "Um load balancer na frente do banco.",
+            "en": "A load balancer in front of the database."
+          }
+        }
+      ],
+      "correctOptionId": "move-reads",
+      "explanation": {
+        "pt-BR": "Servidor a mais só entrega mais carga ao mesmo banco, e leitura não pode esperar em fila: o cliente quer a resposta agora. O caminho é dar outro destino às leituras.",
+        "en": "More servers only deliver more load to the same database, and a read cannot wait in a queue: the customer wants the answer now. The way out is giving reads another destination."
+      }
+    }
+  ],
+  "diagnoseQuestions": {
+    "lostWrites": [
       {
-        "id": "db",
-        "text": {
-          "pt-BR": "O banco, que recebe leituras e escritas e satura em 300 rps.",
-          "en": "The database, which takes reads and writes and saturates at 300 rps."
+        "id": "l4-diagnose-lost",
+        "conceptId": "async-queue",
+        "prompt": {
+          "pt-BR": "Compras foram perdidas. Qual é a causa?",
+          "en": "Purchases were lost. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "db-overloaded",
+            "text": {
+              "pt-BR": "O banco recebeu mais do que atende, e as escritas descartadas não tinham onde esperar.",
+              "en": "The database received more than it can serve, and the dropped writes had nowhere to wait."
+            }
+          },
+          {
+            "id": "stale",
+            "text": {
+              "pt-BR": "As réplicas estavam atrasadas.",
+              "en": "The replicas were behind."
+            }
+          },
+          {
+            "id": "cache-wrote",
+            "text": {
+              "pt-BR": "O cache absorveu as escritas e as perdeu.",
+              "en": "The cache absorbed the writes and lost them."
+            }
+          }
+        ],
+        "correctOptionId": "db-overloaded",
+        "explanation": {
+          "pt-BR": "O banco atende 300 por segundo, somando leitura e escrita. Tire as leituras de cima dele e guarde as escritas numa fila que entregue no ritmo dele: worker rápido demais também faz o banco descartar.",
+          "en": "The database serves 300 per second, reads and writes combined. Take the reads off it and hold the writes in a queue that delivers at its pace: a worker that is too fast also makes the database drop."
         }
       },
       {
-        "id": "app",
-        "text": {
-          "pt-BR": "O servidor de aplicação, que satura em 800 rps.",
-          "en": "The app server, which saturates at 800 rps."
-        }
-      },
-      {
-        "id": "bots",
-        "text": {
-          "pt-BR": "Os bots derrubam tudo logo no início.",
-          "en": "The bots take everything down right at the start."
-        }
-      },
-      {
-        "id": "writes-only",
-        "text": {
-          "pt-BR": "Só as escritas: 15% do pico já passa do que o banco grava.",
-          "en": "Only the writes: 15% of the peak is already more than the database can store."
+        "id": "l4-diagnose-lost-not-enough",
+        "conceptId": "async-queue",
+        "prompt": {
+          "pt-BR": "Qual destas mudanças, sozinha, não impede a perda de compras?",
+          "en": "Which of these changes, on its own, does not prevent purchases from being lost?"
+        },
+        "options": [
+          {
+            "id": "two-workers",
+            "text": {
+              "pt-BR": "Dois workers de 250 por segundo num banco que grava 300.",
+              "en": "Two workers of 250 per second on a database that writes 300."
+            }
+          },
+          {
+            "id": "one-worker",
+            "text": {
+              "pt-BR": "Uma fila com um worker de 250 por segundo.",
+              "en": "A queue with one worker of 250 per second."
+            }
+          },
+          {
+            "id": "paced",
+            "text": {
+              "pt-BR": "Entregar ao banco no máximo 300 escritas por segundo, guardando o resto numa fila.",
+              "en": "Delivering at most 300 writes per second to the database, holding the rest in a queue."
+            }
+          }
+        ],
+        "correctOptionId": "two-workers",
+        "explanation": {
+          "pt-BR": "Dois workers entregam 500 por segundo a um banco de 300: o excedente é descartado depois de já confirmado ao cliente. A fila protege quando a saída respeita o banco.",
+          "en": "Two workers deliver 500 per second to a 300 database: the excess is dropped after being confirmed to the customer. The queue protects when its output respects the database."
         }
       }
     ],
-    "correctOptionId": "db",
-    "explanation": {
-      "pt-BR": "Tudo que passa pelo servidor termina no banco, e ele satura em 300 rps, antes dos 800 do servidor. Quase toda essa carga é leitura repetida. Resolver o banco só expõe o próximo gargalo.",
-      "en": "Everything that goes through the server ends at the database, and it saturates at 300 rps, before the server's 800. Nearly all of that load is repeated reads. Fixing the database only exposes the next bottleneck."
-    }
+    "p99LatencyMs": [
+      {
+        "id": "l4-diagnose-latency",
+        "conceptId": "horizontal-scaling",
+        "prompt": {
+          "pt-BR": "A latência p99 estourou o limite. Qual é a causa?",
+          "en": "p99 latency went over the limit. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "near-full",
+            "text": {
+              "pt-BR": "Algum componente no caminho está perto de 100% de utilização.",
+              "en": "Some component on the path is close to 100% utilization."
+            }
+          },
+          {
+            "id": "too-many-hops",
+            "text": {
+              "pt-BR": "Há componentes demais no caminho; cada salto soma latência.",
+              "en": "There are too many components on the path; every hop adds latency."
+            }
+          },
+          {
+            "id": "async",
+            "text": {
+              "pt-BR": "O cliente espera a escrita sair da fila.",
+              "en": "The customer waits for the write to leave the queue."
+            }
+          }
+        ],
+        "correctOptionId": "near-full",
+        "explanation": {
+          "pt-BR": "Um salto folgado custa poucos milissegundos; um componente a 95% custa 20 vezes a própria base. Ache o que está cheio e tire carga dele, ou reparta entre mais unidades.",
+          "en": "A hop with headroom costs a few milliseconds; a component at 95% costs 20 times its own base. Find what is full and take load off it, or split it across more units."
+        }
+      },
+      {
+        "id": "l4-diagnose-latency-uneven",
+        "conceptId": "load-balancing",
+        "prompt": {
+          "pt-BR": "Um servidor a 95% e outros quase parados. O que isso indica?",
+          "en": "One server at 95% and others nearly idle. What does that indicate?"
+        },
+        "options": [
+          {
+            "id": "not-split",
+            "text": {
+              "pt-BR": "O tráfego não está sendo repartido: falta ligar os outros ao load balancer.",
+              "en": "Traffic is not being split: the others are not wired to the load balancer."
+            }
+          },
+          {
+            "id": "slower",
+            "text": {
+              "pt-BR": "Os outros servidores são mais lentos.",
+              "en": "The other servers are slower."
+            }
+          },
+          {
+            "id": "normal",
+            "text": {
+              "pt-BR": "É o comportamento normal do revezamento.",
+              "en": "That is normal round-robin behavior."
+            }
+          }
+        ],
+        "correctOptionId": "not-split",
+        "explanation": {
+          "pt-BR": "Capacidade só conta se receber tráfego. O revezamento reparte por igual entre o que está ligado; servidor fora do load balancer é custo sem efeito.",
+          "en": "Capacity only counts if it receives traffic. Round-robin splits evenly across what is wired; a server outside the load balancer is cost with no effect."
+        }
+      }
+    ],
+    "errorRate": [
+      {
+        "id": "l4-diagnose-errors",
+        "conceptId": "load-balancing",
+        "prompt": {
+          "pt-BR": "Requisições legítimas começaram a falhar. Qual é a causa?",
+          "en": "Legitimate requests started failing. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "overflow",
+            "text": {
+              "pt-BR": "Um componente recebe mais do que processa, enche o buffer e descarta.",
+              "en": "A component receives more than it processes, fills its buffer and drops."
+            }
+          },
+          {
+            "id": "miss-error",
+            "text": {
+              "pt-BR": "Miss de cache conta como erro.",
+              "en": "A cache miss counts as an error."
+            }
+          },
+          {
+            "id": "limiter-blocks",
+            "text": {
+              "pt-BR": "O rate limiter está barrando clientes legítimos.",
+              "en": "The rate limiter is blocking legitimate customers."
+            }
+          }
+        ],
+        "correctOptionId": "overflow",
+        "explanation": {
+          "pt-BR": "Erro é sempre descarte em algum ponto. Veja onde: um servidor que recebe sozinho o que deveria ser repartido, ou um banco lotado por tráfego que não devia chegar nele.",
+          "en": "An error is always a drop somewhere. See where: a server taking alone what should be split, or a database flooded by traffic that should not reach it."
+        }
+      },
+      {
+        "id": "l4-diagnose-errors-shared",
+        "conceptId": "rate-limiting",
+        "prompt": {
+          "pt-BR": "Durante a onda de bots, por que clientes legítimos recebem erro?",
+          "en": "During the bot wave, why do legitimate customers get errors?"
+        },
+        "options": [
+          {
+            "id": "shared",
+            "text": {
+              "pt-BR": "Bots e clientes disputam a mesma capacidade; quando ela acaba, o descarte não escolhe.",
+              "en": "Bots and customers compete for the same capacity; when it runs out, dropping does not choose."
+            }
+          },
+          {
+            "id": "priority",
+            "text": {
+              "pt-BR": "O sistema dá prioridade aos bots.",
+              "en": "The system gives priority to bots."
+            }
+          },
+          {
+            "id": "limiter",
+            "text": {
+              "pt-BR": "O rate limiter barra clientes legítimos.",
+              "en": "The rate limiter blocks legitimate customers."
+            }
+          }
+        ],
+        "correctOptionId": "shared",
+        "explanation": {
+          "pt-BR": "Um componente saturado descarta o que chegar, sem olhar quem pediu. Para proteger o cliente é preciso tirar o bot do caminho antes.",
+          "en": "A saturated component drops whatever arrives, without looking at who asked. To protect the customer you have to take the bot out of the way first."
+        }
+      }
+    ],
+    "staleReads": [
+      {
+        "id": "l4-diagnose-stale",
+        "conceptId": "replication-lag",
+        "prompt": {
+          "pt-BR": "Há leituras desatualizadas demais. Qual é a causa?",
+          "en": "There are too many stale reads. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "lag-window",
+            "text": {
+              "pt-BR": "Leituras caem numa réplica antes de a escrita recente chegar até ela.",
+              "en": "Reads land on a replica before the recent write has reached it."
+            }
+          },
+          {
+            "id": "queue-delay",
+            "text": {
+              "pt-BR": "A fila devolve dados antigos ao cliente.",
+              "en": "The queue returns old data to the customer."
+            }
+          },
+          {
+            "id": "cache-old",
+            "text": {
+              "pt-BR": "O cache está guardando valores antigos.",
+              "en": "The cache is holding old values."
+            }
+          }
+        ],
+        "correctOptionId": "lag-window",
+        "explanation": {
+          "pt-BR": "Leitura desatualizada nasce na réplica, dentro da janela de lag. Lag de 2 segundos com escrita frequente significa que muita gente lê o valor antigo.",
+          "en": "A stale read is born on the replica, inside the lag window. A 2-second lag with frequent writes means many people read the old value."
+        }
+      },
+      {
+        "id": "l4-diagnose-stale-cache",
+        "conceptId": "caching",
+        "prompt": {
+          "pt-BR": "Neste jogo, por que o cache não gera leituras desatualizadas?",
+          "en": "In this game, why does the cache not produce stale reads?"
+        },
+        "options": [
+          {
+            "id": "invalidates",
+            "text": {
+              "pt-BR": "Toda escrita invalida a chave no cache; a leitura seguinte busca de novo no banco.",
+              "en": "Every write invalidates the key in the cache; the next read fetches it again from the database."
+            }
+          },
+          {
+            "id": "short-ttl",
+            "text": {
+              "pt-BR": "O cache só guarda cada dado por 100 ms.",
+              "en": "The cache only keeps each item for 100 ms."
+            }
+          },
+          {
+            "id": "reads-primary",
+            "text": {
+              "pt-BR": "O cache sempre lê do primário.",
+              "en": "The cache always reads from the primary."
+            }
+          }
+        ],
+        "correctOptionId": "invalidates",
+        "explanation": {
+          "pt-BR": "Aqui a invalidação é automática, então a origem do dado velho é sempre a réplica. Em sistemas reais invalidar cache é um problema à parte, e dos difíceis.",
+          "en": "Here invalidation is automatic, so stale data always comes from the replica. In real systems cache invalidation is a problem of its own, and a hard one."
+        }
+      }
+    ],
+    "costTier": [
+      {
+        "id": "l4-diagnose-cost",
+        "conceptId": "read-replicas",
+        "prompt": {
+          "pt-BR": "O custo passou da faixa permitida. Qual é a causa?",
+          "en": "Cost went above the allowed tier. What is the cause?"
+        },
+        "options": [
+          {
+            "id": "brute-force",
+            "text": {
+              "pt-BR": "Capacidade comprada no lugar de carga evitada: unidades a mais onde bastava tirar tráfego do caminho.",
+              "en": "Capacity bought instead of load avoided: extra units where taking traffic out of the way was enough."
+            }
+          },
+          {
+            "id": "mandatory",
+            "text": {
+              "pt-BR": "É o custo mínimo para esse tráfego; o limite é que está errado.",
+              "en": "It is the minimum cost for this traffic; the limit is what is wrong."
+            }
+          },
+          {
+            "id": "queue-cost",
+            "text": {
+              "pt-BR": "Fila e worker são as peças mais caras.",
+              "en": "Queue and worker are the most expensive pieces."
+            }
+          }
+        ],
+        "correctOptionId": "brute-force",
+        "explanation": {
+          "pt-BR": "Réplica e servidor a mais custam. Um cache tira leituras de cima das réplicas e um rate limiter tira bots de cima de tudo: os dois são baratos e reduzem o que o resto precisa aguentar.",
+          "en": "Extra replicas and servers cost money. A cache takes reads off the replicas and a rate limiter takes bots off everything: both are cheap and shrink what the rest has to bear."
+        }
+      },
+      {
+        "id": "l4-diagnose-cost-count",
+        "conceptId": "horizontal-scaling",
+        "prompt": {
+          "pt-BR": "Quantos servidores de 800 rps pede um pico de 2400 rps de tráfego legítimo?",
+          "en": "How many 800 rps servers does a peak of 2400 rps of legitimate traffic need?"
+        },
+        "options": [
+          {
+            "id": "four",
+            "text": {
+              "pt-BR": "Quatro: três dão a conta exata, sem folga.",
+              "en": "Four: three match it exactly, with no headroom."
+            }
+          },
+          {
+            "id": "three",
+            "text": {
+              "pt-BR": "Três: 3 × 800 = 2400.",
+              "en": "Three: 3 × 800 = 2400."
+            }
+          },
+          {
+            "id": "six",
+            "text": {
+              "pt-BR": "Seis: o máximo disponível.",
+              "en": "Six: the maximum available."
+            }
+          }
+        ],
+        "correctOptionId": "four",
+        "explanation": {
+          "pt-BR": "Três ficam a 100% e a latência vai ao teto; seis pagam por capacidade parada. E isso supõe os bots barrados antes: sem isso, a conta dos servidores sobe junto.",
+          "en": "Three sit at 100% and latency hits the ceiling; six pay for idle capacity. And that assumes bots are stopped earlier: otherwise the server count goes up with them."
+        }
+      }
+    ]
   },
-  "diagnoseQuestions": {
-    "lostWrites": {
-      "id": "l4-diagnose-lost",
-      "conceptId": "async-queue",
+  "justifyQuestions": [
+    {
+      "id": "l4-justify",
+      "conceptId": "rate-limiting",
       "prompt": {
-        "pt-BR": "Compras foram perdidas. Qual é a causa?",
-        "en": "Purchases were lost. What is the cause?"
+        "pt-BR": "Por que a onda de bots não derrubou as leituras?",
+        "en": "Why did the bot wave not take the reads down?"
       },
       "options": [
         {
-          "id": "db-overloaded",
+          "id": "limited",
           "text": {
-            "pt-BR": "O banco recebeu mais do que atende, e as escritas descartadas não tinham onde esperar.",
-            "en": "The database received more than it can serve, and the dropped writes had nowhere to wait."
+            "pt-BR": "Os bots foram barrados antes de ocupar a capacidade que os clientes usam.",
+            "en": "The bots were stopped before taking up the capacity customers use."
           }
         },
         {
-          "id": "stale",
+          "id": "cache-absorbed",
           "text": {
-            "pt-BR": "As réplicas estavam atrasadas.",
-            "en": "The replicas were behind."
+            "pt-BR": "O cache respondeu as requisições dos bots.",
+            "en": "The cache answered the bots' requests."
           }
         },
         {
-          "id": "cache-wrote",
+          "id": "queue-absorbed",
           "text": {
-            "pt-BR": "O cache absorveu as escritas e as perdeu.",
-            "en": "The cache absorbed the writes and lost them."
+            "pt-BR": "A fila guardou as requisições dos bots para depois.",
+            "en": "The queue held the bots' requests for later."
           }
         }
       ],
-      "correctOptionId": "db-overloaded",
+      "correctOptionId": "limited",
       "explanation": {
-        "pt-BR": "O banco atende 300 por segundo, somando leitura e escrita. Tire as leituras de cima dele e guarde as escritas numa fila que entregue no ritmo dele: worker rápido demais também faz o banco descartar.",
-        "en": "The database serves 300 per second, reads and writes combined. Take the reads off it and hold the writes in a queue that delivers at its pace: a worker that is too fast also makes the database drop."
+        "pt-BR": "Bots pedem itens frios, então o cache não ajuda; e fila guarda escritas, não leituras. A única defesa é não deixar o excesso entrar.",
+        "en": "Bots ask for cold items, so the cache does not help; and a queue holds writes, not reads. The only defense is not letting the excess in."
       }
     },
-    "p99LatencyMs": {
-      "id": "l4-diagnose-latency",
-      "conceptId": "horizontal-scaling",
-      "prompt": {
-        "pt-BR": "A latência p99 estourou o limite. Qual é a causa?",
-        "en": "p99 latency went over the limit. What is the cause?"
-      },
-      "options": [
-        {
-          "id": "near-full",
-          "text": {
-            "pt-BR": "Algum componente no caminho está perto de 100% de utilização.",
-            "en": "Some component on the path is close to 100% utilization."
-          }
-        },
-        {
-          "id": "too-many-hops",
-          "text": {
-            "pt-BR": "Há componentes demais no caminho; cada salto soma latência.",
-            "en": "There are too many components on the path; every hop adds latency."
-          }
-        },
-        {
-          "id": "async",
-          "text": {
-            "pt-BR": "O cliente espera a escrita sair da fila.",
-            "en": "The customer waits for the write to leave the queue."
-          }
-        }
-      ],
-      "correctOptionId": "near-full",
-      "explanation": {
-        "pt-BR": "Um salto folgado custa poucos milissegundos; um componente a 95% custa 20 vezes a própria base. Ache o que está cheio e tire carga dele, ou reparta entre mais unidades.",
-        "en": "A hop with headroom costs a few milliseconds; a component at 95% costs 20 times its own base. Find what is full and take load off it, or split it across more units."
-      }
-    },
-    "errorRate": {
-      "id": "l4-diagnose-errors",
-      "conceptId": "load-balancing",
-      "prompt": {
-        "pt-BR": "Requisições legítimas começaram a falhar. Qual é a causa?",
-        "en": "Legitimate requests started failing. What is the cause?"
-      },
-      "options": [
-        {
-          "id": "overflow",
-          "text": {
-            "pt-BR": "Um componente recebe mais do que processa, enche o buffer e descarta.",
-            "en": "A component receives more than it processes, fills its buffer and drops."
-          }
-        },
-        {
-          "id": "miss-error",
-          "text": {
-            "pt-BR": "Miss de cache conta como erro.",
-            "en": "A cache miss counts as an error."
-          }
-        },
-        {
-          "id": "limiter-blocks",
-          "text": {
-            "pt-BR": "O rate limiter está barrando clientes legítimos.",
-            "en": "The rate limiter is blocking legitimate customers."
-          }
-        }
-      ],
-      "correctOptionId": "overflow",
-      "explanation": {
-        "pt-BR": "Erro é sempre descarte em algum ponto. Veja onde: um servidor que recebe sozinho o que deveria ser repartido, ou um banco lotado por tráfego que não devia chegar nele.",
-        "en": "An error is always a drop somewhere. See where: a server taking alone what should be split, or a database flooded by traffic that should not reach it."
-      }
-    },
-    "staleReads": {
-      "id": "l4-diagnose-stale",
+    {
+      "id": "l4-justify-short-lag",
       "conceptId": "replication-lag",
       "prompt": {
-        "pt-BR": "Há leituras desatualizadas demais. Qual é a causa?",
-        "en": "There are too many stale reads. What is the cause?"
+        "pt-BR": "Por que as leituras desatualizadas ficaram poucas?",
+        "en": "Why did stale reads stay low?"
       },
       "options": [
         {
-          "id": "lag-window",
+          "id": "short-lag",
           "text": {
-            "pt-BR": "Leituras caem numa réplica antes de a escrita recente chegar até ela.",
-            "en": "Reads land on a replica before the recent write has reached it."
+            "pt-BR": "As réplicas têm lag curto: poucas leituras caem na janela depois de uma escrita.",
+            "en": "The replicas have short lag: few reads fall in the window after a write."
           }
         },
         {
           "id": "queue-delay",
           "text": {
-            "pt-BR": "A fila devolve dados antigos ao cliente.",
-            "en": "The queue returns old data to the customer."
+            "pt-BR": "A fila atrasou as escritas até as leituras terminarem.",
+            "en": "The queue delayed the writes until the reads were done."
           }
         },
         {
-          "id": "cache-old",
+          "id": "limiter",
           "text": {
-            "pt-BR": "O cache está guardando valores antigos.",
-            "en": "The cache is holding old values."
+            "pt-BR": "O rate limiter barrou as leituras antigas.",
+            "en": "The rate limiter blocked the old reads."
           }
         }
       ],
-      "correctOptionId": "lag-window",
+      "correctOptionId": "short-lag",
       "explanation": {
-        "pt-BR": "Leitura desatualizada nasce na réplica, dentro da janela de lag. Lag de 2 segundos com escrita frequente significa que muita gente lê o valor antigo.",
-        "en": "A stale read is born on the replica, inside the lag window. A 2-second lag with frequent writes means many people read the old value."
-      }
-    },
-    "costTier": {
-      "id": "l4-diagnose-cost",
-      "conceptId": "read-replicas",
-      "prompt": {
-        "pt-BR": "O custo passou da faixa permitida. Qual é a causa?",
-        "en": "Cost went above the allowed tier. What is the cause?"
-      },
-      "options": [
-        {
-          "id": "brute-force",
-          "text": {
-            "pt-BR": "Capacidade comprada no lugar de carga evitada: unidades a mais onde bastava tirar tráfego do caminho.",
-            "en": "Capacity bought instead of load avoided: extra units where taking traffic out of the way was enough."
-          }
-        },
-        {
-          "id": "mandatory",
-          "text": {
-            "pt-BR": "É o custo mínimo para esse tráfego; o limite é que está errado.",
-            "en": "It is the minimum cost for this traffic; the limit is what is wrong."
-          }
-        },
-        {
-          "id": "queue-cost",
-          "text": {
-            "pt-BR": "Fila e worker são as peças mais caras.",
-            "en": "Queue and worker are the most expensive pieces."
-          }
-        }
-      ],
-      "correctOptionId": "brute-force",
-      "explanation": {
-        "pt-BR": "Réplica e servidor a mais custam. Um cache tira leituras de cima das réplicas e um rate limiter tira bots de cima de tudo: os dois são baratos e reduzem o que o resto precisa aguentar.",
-        "en": "Extra replicas and servers cost money. A cache takes reads off the replicas and a rate limiter takes bots off everything: both are cheap and shrink what the rest has to bear."
+        "pt-BR": "Leitura desatualizada depende de duas coisas: quantas leituras vão à réplica e quanto tempo ela demora para receber cada escrita. Você controlou a segunda.",
+        "en": "A stale read depends on two things: how many reads go to the replica and how long it takes to receive each write. You controlled the second."
       }
     }
-  },
-  "justifyQuestion": {
-    "id": "l4-justify",
-    "conceptId": "rate-limiting",
-    "prompt": {
-      "pt-BR": "Por que a onda de bots não derrubou as leituras?",
-      "en": "Why did the bot wave not take the reads down?"
-    },
-    "options": [
-      {
-        "id": "limited",
-        "text": {
-          "pt-BR": "Os bots foram barrados antes de ocupar a capacidade que os clientes usam.",
-          "en": "The bots were stopped before taking up the capacity customers use."
-        }
-      },
-      {
-        "id": "cache-absorbed",
-        "text": {
-          "pt-BR": "O cache respondeu as requisições dos bots.",
-          "en": "The cache answered the bots' requests."
-        }
-      },
-      {
-        "id": "queue-absorbed",
-        "text": {
-          "pt-BR": "A fila guardou as requisições dos bots para depois.",
-          "en": "The queue held the bots' requests for later."
-        }
-      }
-    ],
-    "correctOptionId": "limited",
-    "explanation": {
-      "pt-BR": "Bots pedem itens frios, então o cache não ajuda; e fila guarda escritas, não leituras. A única defesa é não deixar o excesso entrar.",
-      "en": "Bots ask for cold items, so the cache does not help; and a queue holds writes, not reads. The only defense is not letting the excess in."
-    }
-  }
+  ]
 }

@@ -6,13 +6,19 @@ import { runToEnd } from '../engine/simulation';
 import { LOCALES } from '../i18n/locales';
 import { countPlaced } from './boardOps';
 import { applyPlan, REFERENCE_SOLUTIONS, TRAPS } from './referenceSolutions';
-import { contentIndexSchema, levelSchema, type Level } from './schema';
+import { contentIndexSchema, levelSchema, type Level, type Question } from './schema';
 import { buildSimConfig } from './simConfig';
 
 const CONTENT_DIR = join(process.cwd(), 'public', 'content');
 
 function readJson(relativePath: string): unknown {
   return JSON.parse(readFileSync(join(CONTENT_DIR, relativePath), 'utf8'));
+}
+
+function allQuestions(level: Level): Question[] {
+  return [level.predictQuestions, level.justifyQuestions, ...Object.values(level.diagnoseQuestions)].flatMap(
+    (pool) => pool ?? [],
+  );
 }
 
 const index = contentIndexSchema.parse(readJson('index.json'));
@@ -52,11 +58,7 @@ describe('índice do conteúdo', () => {
   test('a fase de revisão cobre cada conceito com alguma pergunta', () => {
     const review = levels.at(-1);
     if (!review) throw new Error('Sem fases.');
-    const asked = new Set(
-      [review.predictQuestion, review.justifyQuestion, ...Object.values(review.diagnoseQuestions)].map(
-        (question) => question?.conceptId,
-      ),
-    );
+    const asked = new Set(allQuestions(review).map((question) => question.conceptId));
 
     expect(review.concepts.filter((conceptId) => !asked.has(conceptId))).toEqual([]);
   });
@@ -69,13 +71,17 @@ describe.each(levels)('fase $id', (level) => {
     expect(validateBoard(level.initialBoard)).toEqual([]);
   });
 
-  test('textos existem nos dois idiomas e diferem entre si quando são frases', () => {
-    const questions = [level.predictQuestion, level.justifyQuestion, ...Object.values(level.diagnoseQuestions)];
-    for (const question of questions) {
-      if (!question) continue;
-      for (const locale of LOCALES) expect(question.explanation[locale].length).toBeGreaterThan(20);
-      expect(question.explanation.en).not.toBe(question.explanation['pt-BR']);
+  test('explicações existem nos dois idiomas e não são cópia uma da outra', () => {
+    for (const question of allQuestions(level)) {
+      for (const locale of LOCALES) expect(question.explanation[locale].length, question.id).toBeGreaterThan(20);
+      expect(question.explanation.en, question.id).not.toBe(question.explanation['pt-BR']);
     }
+  });
+
+  test('cada etapa do loop tem mais de uma pergunta para revezar', () => {
+    const pools = [level.predictQuestions, level.justifyQuestions, ...Object.values(level.diagnoseQuestions)];
+
+    for (const pool of pools) expect(pool?.length).toBeGreaterThanOrEqual(2);
   });
 
   test('o sistema inicial falha: há o que prever e o que consertar', () => {
