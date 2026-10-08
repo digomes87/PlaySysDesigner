@@ -269,8 +269,19 @@ class SimulationRun implements Simulation {
     }
 
     const arrivals = this.traffic.arrivalsAt(this.nowMs);
-    for (let index = 0; index < arrivals.base; index += 1) this.inject(this.pickKind());
-    for (let index = 0; index < arrivals.bots; index += 1) this.inject('bot');
+    // Bots da onda chegam misturados ao tráfego base: quem chega primeiro no tick pega a capacidade.
+    let base = arrivals.base;
+    let bots = arrivals.bots;
+    while (base + bots > 0) {
+      const isWaveBot = bots > 0 && (base === 0 || this.random() * (base + bots) < bots);
+      if (isWaveBot) {
+        bots -= 1;
+        this.inject('bot');
+      } else {
+        base -= 1;
+        this.inject(this.pickKind());
+      }
+    }
   }
 
   private closeUtilization(): void {

@@ -1,5 +1,6 @@
 import {
   AVAILABILITY_ERROR_THRESHOLD,
+  SLO_MIN_SAMPLES,
   SLO_WINDOW_SEC,
   TICKS_PER_SEC,
   type CostTier,
@@ -93,7 +94,10 @@ export class MetricsCollector {
     this.lostWrites += count;
   }
 
-  /** Fecha o tick e devolve as métricas com p99/errorRate da janela corrente. */
+  /**
+   * Fecha o tick e devolve as métricas com p99/errorRate da janela corrente.
+   * Com menos de SLO_MIN_SAMPLES respostas na janela, os dois saem zerados.
+   */
   endTick(): Metrics {
     const sample: TickSample = { ok: this.tickOk, errors: this.tickErrors, latencies: this.tickLatencies };
     this.pushSample(sample);
@@ -101,7 +105,9 @@ export class MetricsCollector {
     this.tickLatencies = new Map();
     this.tickOk = 0;
     this.tickErrors = 0;
-    return this.build(this.windowLatency.percentile(0.99), ratio(this.windowErrors, this.windowOk + this.windowErrors));
+    const answered = this.windowOk + this.windowErrors;
+    if (answered < SLO_MIN_SAMPLES) return this.build(0, 0);
+    return this.build(this.windowLatency.percentile(0.99), ratio(this.windowErrors, answered));
   }
 
   totals(): Metrics {
