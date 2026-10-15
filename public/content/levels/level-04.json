@@ -56,7 +56,7 @@
         },
         "position": {
           "x": 0,
-          "y": 260
+          "y": 240
         },
         "locked": true
       },
@@ -71,8 +71,8 @@
           "params": {}
         },
         "position": {
-          "x": 640,
-          "y": 260
+          "x": 480,
+          "y": 240
         },
         "locked": true
       },
@@ -87,8 +87,8 @@
           "params": {}
         },
         "position": {
-          "x": 1400,
-          "y": 420
+          "x": 960,
+          "y": 360
         },
         "locked": true
       }

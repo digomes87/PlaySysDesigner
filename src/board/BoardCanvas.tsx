@@ -31,7 +31,8 @@ const DEFAULT_EDGE_OPTIONS = {
   type: 'flow',
   markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: EDGE_COLOR },
 };
-const FIT_VIEW_OPTIONS = { padding: 0.18, maxZoom: 1.1 };
+// Below this zoom the component text is unreadable: past it the board pans instead of shrinking.
+const FIT_VIEW_OPTIONS = { padding: 0.12, minZoom: 0.6, maxZoom: 1.1 };
 
 function nodeTitle(node: BoardNode, level: Level, i18n: I18n): string {
   const item = level.availableComponents.find((candidate) => candidate.id === node.paletteId);
