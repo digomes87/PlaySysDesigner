@@ -1,5 +1,5 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
-import type { BoardNode } from '../engine/types';
+import type { BoardNode, DropSnapshot } from '../engine/types';
 import { useRunStore } from '../game/runStore';
 import { useI18n } from '../i18n/useI18n';
 import { ComponentGlyph, RENDERERS } from '../renderers/registry';
@@ -14,6 +14,13 @@ export type ComponentFlowNode = Node<ComponentNodeData, 'component'>;
 
 const HOT_UTILIZATION = 0.8;
 
+/** Bots a rate limiter turns away are the component doing its job, not a failure. */
+function countDrops(drops: readonly DropSnapshot[], nodeId: string, blocked: boolean): number {
+  return drops
+    .filter((drop) => drop.nodeId === nodeId && (drop.reason === 'rate_limited') === blocked)
+    .reduce((sum, drop) => sum + drop.count, 0);
+}
+
 function loadLevel(utilization: number): 'calm' | 'hot' | 'full' {
   if (utilization >= 1) return 'full';
   return utilization >= HOT_UTILIZATION ? 'hot' : 'calm';
@@ -23,9 +30,8 @@ function loadLevel(utilization: number): 'calm' | 'hot' | 'full' {
 export function ComponentNode({ id, data, selected }: NodeProps<ComponentFlowNode>) {
   const { m, percent } = useI18n();
   const runtime = useRunStore((state) => state.snapshot?.nodes[id]);
-  const dropped = useRunStore((state) =>
-    (state.snapshot?.drops ?? []).reduce((sum, drop) => (drop.nodeId === id ? sum + drop.count : sum), 0),
-  );
+  const dropped = useRunStore((state) => countDrops(state.snapshot?.drops ?? [], id, false));
+  const blocked = useRunStore((state) => countDrops(state.snapshot?.drops ?? [], id, true));
   const { node, title, specs } = data;
   const renderer = RENDERERS[node.type];
   const isSource = node.type === 'traffic_source';
@@ -68,10 +74,11 @@ export function ComponentNode({ id, data, selected }: NodeProps<ComponentFlowNod
         </div>
       )}
 
-      {runtime && (runtime.down || runtime.queued > 0 || dropped > 0) && (
+      {runtime && (runtime.down || runtime.queued > 0 || dropped > 0 || blocked > 0) && (
         <ul className="component-node__badges mono">
           {runtime.down && <li className="badge badge--critical">{m.play.down}</li>}
           {runtime.queued > 0 && <li className="badge">{m.play.queued(runtime.queued)}</li>}
+          {blocked > 0 && <li className="badge">{m.play.blocked(blocked)}</li>}
           {dropped > 0 && <li className="badge badge--critical">✕ {m.play.dropped(dropped)}</li>}
         </ul>
       )}

@@ -53,6 +53,7 @@ export const en: Messages = {
     time: (now, total) => `${now}s of ${total}s`,
     legend: 'Traffic',
     dropped: (count) => `${count} dropped`,
+    blocked: (count) => `${count} blocked`,
     queued: (count) => `${count} queued`,
     down: 'Down',
     utilization: 'Utilization',

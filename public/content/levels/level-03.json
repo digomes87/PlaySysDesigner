@@ -62,7 +62,7 @@
           "params": {}
         },
         "position": {
-          "x": 400,
+          "x": 220,
           "y": 240
         },
         "locked": true
@@ -78,7 +78,7 @@
           "params": {}
         },
         "position": {
-          "x": 600,
+          "x": 440,
           "y": 140
         },
         "locked": true
@@ -94,7 +94,7 @@
           "params": {}
         },
         "position": {
-          "x": 600,
+          "x": 440,
           "y": 340
         },
         "locked": true
@@ -112,7 +112,7 @@
           }
         },
         "position": {
-          "x": 840,
+          "x": 680,
           "y": 60
         },
         "locked": true
@@ -130,7 +130,7 @@
           }
         },
         "position": {
-          "x": 1080,
+          "x": 920,
           "y": 60
         },
         "locked": true
@@ -146,7 +146,7 @@
           "params": {}
         },
         "position": {
-          "x": 1320,
+          "x": 1000,
           "y": 340
         },
         "locked": true
