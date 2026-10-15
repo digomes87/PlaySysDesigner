@@ -10,7 +10,7 @@ export function sloHolds(slo: Slo, metrics: Metrics): boolean {
   return slo.op === 'lte' ? observed <= limit : observed >= limit;
 }
 
-/** Guarda a primeira violação de cada SLO ao longo da partida. */
+/** Keeps the first violation of each SLO over the run. */
 export class SloTracker {
   private readonly violated = new Map<number, SloViolation>();
 
@@ -23,7 +23,7 @@ export class SloTracker {
     });
   }
 
-  /** Em ordem cronológica; empate segue a ordem em que os SLOs foram declarados. */
+  /** In chronological order; ties follow the order the SLOs were declared in. */
   violations(): SloViolation[] {
     return [...this.violated.entries()]
       .sort(([indexA, a], [indexB, b]) => a.atSec - b.atSec || indexA - indexB)

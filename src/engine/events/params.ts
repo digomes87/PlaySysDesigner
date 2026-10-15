@@ -1,12 +1,12 @@
 import type { ScheduledEvent } from '../types';
 
 function missing(event: ScheduledEvent, name: string, expected: string): Error {
-  return new Error(`Evento ${event.type} (t=${event.atSec}s): parâmetro "${name}" deve ser ${expected}.`);
+  return new Error(`Event ${event.type} (t=${event.atSec}s): param "${name}" must be ${expected}.`);
 }
 
 export function requireNumber(event: ScheduledEvent, name: string): number {
   const value = event.params[name];
-  if (typeof value !== 'number' || !Number.isFinite(value)) throw missing(event, name, 'um número');
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw missing(event, name, 'a number');
   return value;
 }
 
@@ -20,7 +20,7 @@ export function requireString(event: ScheduledEvent, name: string): string {
   return value;
 }
 
-/** Fim do efeito. Sem `durationSec` o efeito vale até o fim da partida. */
+/** End of the effect. Without `durationSec` the effect lasts until the end of the run. */
 export function effectEndMs(event: ScheduledEvent, nowMs: number): number {
   return nowMs + optionalNumber(event, 'durationSec', Number.POSITIVE_INFINITY) * 1000;
 }

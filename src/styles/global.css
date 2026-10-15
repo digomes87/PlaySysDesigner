@@ -67,7 +67,7 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
-/* Rótulo técnico pequeno, usado em todo o app como "legenda de planta". */
+/* Small technical label, used across the app as a "blueprint caption". */
 .eyebrow {
   font-family: var(--font-mono);
   font-size: var(--text-xs);

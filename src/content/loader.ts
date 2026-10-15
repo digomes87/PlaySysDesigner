@@ -13,13 +13,13 @@ export class ContentError extends Error {
   }
 }
 
-/** O conteúdo é dado externo: nada entra no jogo sem passar pelo schema. */
+/** Content is external data: nothing enters the game without passing the schema. */
 async function loadJson<TSchema extends z.ZodType>(relativePath: string, schema: TSchema): Promise<z.infer<TSchema>> {
   let response: Response;
   try {
     response = await fetch(contentUrl(relativePath));
   } catch (cause) {
-    throw new ContentError(`Não foi possível baixar ${relativePath}.`, relativePath, { cause });
+    throw new ContentError(`Could not download ${relativePath}.`, relativePath, { cause });
   }
   if (!response.ok) throw new ContentError(`${relativePath} respondeu ${response.status}.`, relativePath);
 
@@ -27,13 +27,13 @@ async function loadJson<TSchema extends z.ZodType>(relativePath: string, schema:
   try {
     raw = await response.json();
   } catch (cause) {
-    throw new ContentError(`${relativePath} não é um JSON válido.`, relativePath, { cause });
+    throw new ContentError(`${relativePath} is not valid JSON.`, relativePath, { cause });
   }
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
     const first = parsed.error.issues[0];
     const where = first ? `${first.path.join('.')}: ${first.message}` : 'formato inesperado';
-    throw new ContentError(`${relativePath} está fora do schema (${where}).`, relativePath);
+    throw new ContentError(`${relativePath} does not match the schema (${where}).`, relativePath);
   }
   return parsed.data;
 }

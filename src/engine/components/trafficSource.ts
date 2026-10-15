@@ -1,7 +1,7 @@
 import type { ComponentBehavior } from '../types';
 import { NO_PRIORITY } from './shared';
 
-/** Origem do tráfego: o núcleo injeta as requisições a partir dela; nunca recebe nada. */
+/** Traffic source: the core injects requests from it; it never receives anything. */
 export const trafficSource: ComponentBehavior<null> = {
   priority: NO_PRIORITY,
   createState: () => null,

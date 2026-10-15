@@ -3,9 +3,9 @@ import type { ComponentSpec, ComponentType } from '../engine/types';
 import type { Messages } from '../i18n/messages.pt-BR';
 
 export interface ComponentRenderer {
-  /** Desenho do tipo, num viewBox 24x24, só traço (herda `currentColor`). */
+  /** Type glyph in a 24x24 viewBox, stroke only (inherits `currentColor`). */
   readonly glyph: ReactNode;
-  /** Números da peça que importam para decidir: capacidade, lag, acerto... */
+  /** Component numbers that matter for a decision: capacity, lag, hit rate... */
   specLines(spec: ComponentSpec, m: Messages): string[];
   readonly hasInput: boolean;
   readonly hasOutput: boolean;
@@ -14,8 +14,8 @@ export interface ComponentRenderer {
 const capacity = (spec: ComponentSpec, m: Messages): string[] => [m.specs.rps(spec.capacityRps)];
 
 /**
- * Mapa tipo -> renderer. O tipo mapeado obriga a registrar um renderer para cada
- * ComponentType: esquecer um tipo novo aqui é erro de compilação.
+ * Type -> renderer map. The mapped type forces a renderer for every
+ * ComponentType: forgetting a new type here is a compile error.
  */
 export const RENDERERS: { readonly [TType in ComponentType]: ComponentRenderer } = {
   traffic_source: {

@@ -5,7 +5,7 @@ import { TICK_MS, type SimConfig, type SimResult, type Simulation, type SloViola
 export const SPEEDS = [2, 4, 8] as const;
 export type Speed = (typeof SPEEDS)[number];
 
-/** Teto de ticks por quadro: aba em segundo plano não pode travar a volta ao primeiro plano. */
+/** Cap on ticks per frame: a background tab must not freeze when it comes back. */
 const MAX_TICKS_PER_FRAME = 40;
 
 interface RunState {
@@ -20,13 +20,13 @@ interface RunState {
   resume(): void;
   skip(): void;
   setSpeed(speed: Speed): void;
-  /** Para a simulação e limpa o que estava na tela. */
+  /** Stops the simulation and clears the screen. */
   clear(): void;
 }
 
 /**
- * Liga o motor headless ao relógio da tela. A simulação em si fica fora do estado
- * (é mutável); o store só guarda o retrato do último tick, que é o que a UI desenha.
+ * Connects the headless engine to the screen's clock. The simulation itself lives outside
+ * the state (it is mutable); the store keeps only the last tick's snapshot, which the UI draws.
  */
 export const useRunStore = create<RunState>((set, get) => {
   let simulation: Simulation | null = null;

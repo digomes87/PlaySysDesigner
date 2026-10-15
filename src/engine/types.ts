@@ -1,17 +1,17 @@
 /**
- * Contratos do motor. Nada aqui depende de React nem do DOM: a simulação roda
- * headless, em ticks discretos, e é determinística para uma mesma seed.
+ * Engine contracts. Nothing here depends on React or the DOM: the simulation runs
+ * headless, in discrete ticks, and is deterministic for a given seed.
  */
 
 export const TICK_MS = 100;
 export const TICKS_PER_SEC = 1000 / TICK_MS;
-/** Teto da latência de um componente, em múltiplos de `baseLatencyMs`. */
+/** Ceiling of a component's latency, in multiples of `baseLatencyMs`. */
 export const LATENCY_CEILING_FACTOR = 20;
-/** Janela deslizante usada para p99 e errorRate ao avaliar SLOs. */
+/** Sliding window used for p99 and errorRate when checking SLOs. */
 export const SLO_WINDOW_SEC = 5;
-/** Abaixo disto a janela ainda não tem amostra para p99/errorRate: uma falha isolada não reprova. */
+/** Below this the window has no sample for p99/errorRate yet: a single failure does not fail the run. */
 export const SLO_MIN_SAMPLES = 10;
-/** Um segundo conta como disponível se a taxa de erro dele ficar até este limite. */
+/** A second counts as available if its error rate stays within this limit. */
 export const AVAILABILITY_ERROR_THRESHOLD = 0.05;
 export const MAX_HOPS = 16;
 export const DEFAULT_KEYSPACE = 1000;
@@ -40,7 +40,7 @@ export interface ComponentSpec {
   readonly baseLatencyMs: number;
   readonly costTier: CostTier;
   readonly bufferSize: number;
-  /** Extras por tipo (hitRate, replicationLagMs, limitRps...). Opaco para o núcleo. */
+  /** Per-type extras (hitRate, replicationLagMs, limitRps...). Opaque to the core. */
   readonly params: Readonly<Record<string, number>>;
 }
 
@@ -48,11 +48,11 @@ export interface BoardNode {
   readonly id: string;
   readonly type: ComponentType;
   readonly spec: ComponentSpec;
-  /** Só a UI usa. */
+  /** Used by the UI only. */
   readonly position: { readonly x: number; readonly y: number };
-  /** Peça do sistema inicial: o jogador não remove. */
+  /** Component of the initial system: the player cannot remove it. */
   readonly locked?: boolean;
-  /** Peça da paleta que originou o nó; o motor ignora. */
+  /** Palette component the node came from; the engine ignores it. */
   readonly paletteId?: string;
 }
 
@@ -67,19 +67,19 @@ export interface Board {
   readonly edges: readonly BoardEdge[];
 }
 
-/** Uma requisição em trânsito. Só o núcleo altera `latencyMs` e `hops`. */
+/** A request in flight. Only the core changes `latencyMs` and `hops`. */
 export interface SimRequest {
   readonly id: number;
   readonly kind: RequestKind;
-  /** Chave de dado lida ou escrita; base de staleReads e da invalidação de cache. */
+  /** Data key read or written; basis for staleReads and cache invalidation. */
   readonly key: number;
-  /** Identidade da operação; um retry repete o opId, o que permite contar duplicateOps. */
+  /** Operation identity; a retry repeats the opId, which lets duplicateOps be counted. */
   readonly opId: number;
   readonly bornAtMs: number;
   readonly sourceId: string;
-  /** 0 na primeira tentativa. */
+  /** 0 on the first attempt. */
   readonly attempt: number;
-  /** Trabalho já confirmado ao cliente (saiu de uma fila); não entra em latência nem erro. */
+  /** Work already acknowledged to the client (left a queue); not counted in latency or errors. */
   readonly async: boolean;
   latencyMs: number;
   hops: number;
@@ -88,47 +88,47 @@ export interface SimRequest {
 export type DropReason = 'saturated' | 'rate_limited' | 'node_down' | 'no_route' | 'partitioned';
 
 export type RouteDecision =
-  /** Segue para a próxima saída; quem escolhe é o roteador (prioridade + round-robin). */
+  /** Moves on to the next output; the router chooses it (priority + round-robin). */
   | { readonly action: 'forward' }
   | { readonly action: 'respond'; readonly stale?: boolean }
-  /** Responde ao cliente e o componente guarda o trabalho para processar depois. */
+  /** Answers the client and the component keeps the work to process later. */
   | { readonly action: 'ack' }
   | { readonly action: 'drop'; readonly reason: DropReason };
 
-/** Visão que um comportamento tem do próprio nó durante a simulação. */
+/** A behaviour's view of its own node during the simulation. */
 export interface NodeRuntime<TState = unknown> {
   readonly node: BoardNode;
   readonly state: TState;
-  /** Demanda / capacidade no tick anterior. */
+  /** Demand / capacity in the previous tick. */
   readonly utilization: number;
   readonly down: boolean;
 }
 
 export interface SimContext {
   readonly nowMs: number;
-  /** PRNG da partida, em [0, 1). */
+  /** The run's PRNG, in [0, 1). */
   random(): number;
   lastWriteAtMs(key: number): number | undefined;
-  /** Grava a escrita no dado durável e conta duplicata se o opId já foi gravado. */
+  /** Stores the write durably and counts a duplicate if the opId was already stored. */
   commitWrite(req: SimRequest): void;
-  /** Entrega trabalho a uma saída com folga agora; false se nenhuma puder receber. */
+  /** Hands work to an output with spare capacity now; false if none can take it. */
   dispatch(req: SimRequest, fromNodeId: string): boolean;
   addLostWrites(count: number): void;
 }
 
 /**
- * Comportamento de um tipo de componente. O núcleo cuida de capacidade, buffer,
- * latência e roteamento; aqui fica só o que o tipo tem de particular.
+ * Behaviour of a component type. The core handles capacity, buffer,
+ * latency and routing; only what is specific to the type lives here.
  */
 export interface ComponentBehavior<TState = unknown> {
-  /** Prioridade de roteamento por tipo de requisição; maior vence, iguais revezam. */
+  /** Routing priority per request type; higher wins, equals take turns. */
   readonly priority: Readonly<Record<RequestKind, number>>;
   createState(node: BoardNode): TState;
   accepts(req: SimRequest, node: BoardNode): boolean;
   handle(req: SimRequest, node: NodeRuntime<TState>, ctx: SimContext): RouteDecision;
   onTick?(node: NodeRuntime<TState>, ctx: SimContext): void;
   onEvent?(event: ScheduledEvent, node: NodeRuntime<TState>, ctx: SimContext): void;
-  /** Trabalho guardado pelo próprio componente (ex.: profundidade da fila). */
+  /** Work held by the component itself (e.g. queue depth). */
   backlog?(node: NodeRuntime<TState>): number;
 }
 
@@ -154,12 +154,12 @@ export interface ScheduledEvent {
 }
 
 export interface RetryPolicy {
-  /** Resposta mais lenta que isto é tratada pelo cliente como falha. */
+  /** A response slower than this is treated by the client as a failure. */
   readonly timeoutMs: number;
   readonly maxRetries: number;
 }
 
-/** Alavancas de tráfego que os eventos podem mexer. */
+/** Traffic levers that events can pull. */
 export interface TrafficControl {
   startRamp(toRps: number, nowMs: number, durationMs: number): void;
   addMultiplier(factor: number, untilMs: number): void;
@@ -170,11 +170,11 @@ export interface TrafficControl {
 export interface EventContext {
   readonly nowMs: number;
   readonly traffic: TrafficControl;
-  /** Nós alvo: `nodeId`, ou os primeiros `count` (padrão 1) de `nodeType`. */
+  /** Target nodes: `nodeId`, or the first `count` (default 1) of `nodeType`. */
   targets(params: EventParams): readonly NodeRuntime[];
   failNode(nodeId: string, untilMs: number): void;
   cutEdges(fromId: string, toId: string, untilMs: number): void;
-  /** Repassa o evento ao comportamento do nó (`onEvent`). */
+  /** Forwards the event to the node's behaviour (`onEvent`). */
   notify(event: ScheduledEvent, nodeId: string): void;
 }
 
@@ -183,7 +183,7 @@ export type EventHandler = (event: ScheduledEvent, ctx: EventContext) => void;
 export interface TrafficConfig {
   readonly baseRps: number;
   readonly mix: Readonly<Record<RequestKind, number>>;
-  /** Quantidade de chaves distintas; menor = mais colisão entre leitura e escrita. */
+  /** Number of distinct keys; fewer = more collisions between reads and writes. */
   readonly keyspace?: number;
 }
 
@@ -210,7 +210,7 @@ export interface SloViolation {
   readonly observed: number | CostTier;
 }
 
-/** Soma máxima de pontos de custo (low=1, mid=2, high=3) para o tabuleiro ficar em cada faixa. */
+/** Maximum sum of cost points (low=1, mid=2, high=3) for the board to stay in each tier. */
 export interface CostBudget {
   readonly low: number;
   readonly mid: number;
@@ -247,10 +247,10 @@ export interface DropSnapshot {
 export interface TickSnapshot {
   readonly tick: number;
   readonly timeSec: number;
-  /** p99 e errorRate da janela corrente; demais métricas acumuladas. */
+  /** p99 and errorRate of the current window; other metrics are cumulative. */
   readonly metrics: Metrics;
   readonly nodes: Readonly<Record<string, NodeSnapshot>>;
-  /** Requisições que cruzaram cada aresta neste tick; alimenta as partículas. */
+  /** Requests that crossed each edge this tick; feeds the particles. */
   readonly flows: readonly FlowSnapshot[];
   readonly drops: readonly DropSnapshot[];
   readonly firedEvents: readonly ScheduledEvent[];
@@ -258,10 +258,10 @@ export interface TickSnapshot {
 
 export interface SimResult {
   readonly passed: boolean;
-  /** Métricas da partida inteira. */
+  /** Metrics of the whole run. */
   readonly metrics: Metrics;
   readonly violations: readonly SloViolation[];
-  /** A violação mais antiga; escolhe a pergunta de diagnóstico. */
+  /** The earliest violation; picks the diagnose question. */
   readonly firstViolation: SloViolation | null;
 }
 

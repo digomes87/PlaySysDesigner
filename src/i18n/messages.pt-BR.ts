@@ -1,7 +1,7 @@
 import type { ComponentType, DropReason, MetricId, RequestKind, SimEventType } from '../engine/types';
 import type { ConceptState } from '../progress/mastery';
 
-/** Textos da interface. O inglês precisa ter exatamente estas chaves, senão não compila. */
+/** Interface texts. The English catalogue must have exactly these keys, or it does not compile. */
 export interface Messages {
   readonly app: { readonly name: string; readonly tagline: string; readonly language: string };
   readonly nav: { readonly levels: string; readonly progress: string };

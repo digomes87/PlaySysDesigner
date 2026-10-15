@@ -51,13 +51,13 @@ function redundantBoard(): Board {
 }
 
 describe('registry', () => {
-  test('todo tipo de evento tem handler', () => {
+  test('every event type has a handler', () => {
     for (const type of SIM_EVENT_TYPES) {
       expect(EVENT_HANDLERS[type]).toBeTypeOf('function');
     }
   });
 
-  test('evento aparece em firedEvents no tick em que dispara, uma vez só', () => {
+  test('an event shows up in firedEvents on the tick it fires, only once', () => {
     const event = makeEvent(2, 'traffic_spike', { multiplier: 2, durationSec: 1 });
 
     const run = runCollecting(makeConfig(simpleBoard(), { events: [event] }));
@@ -66,7 +66,7 @@ describe('registry', () => {
     expect(firedAt).toEqual([2]);
   });
 
-  test('parâmetro obrigatório ausente falha com mensagem clara', () => {
+  test('a missing required param fails with a clear message', () => {
     const config = makeConfig(simpleBoard(), { events: [makeEvent(0, 'traffic_ramp', {})] });
 
     expect(() => runToEnd(config)).toThrow(/toRps/);
@@ -74,7 +74,7 @@ describe('registry', () => {
 });
 
 describe('traffic_ramp', () => {
-  test('leva o tráfego de baseRps até toRps de forma linear', () => {
+  test('moves traffic linearly from baseRps to toRps', () => {
     const config = makeConfig(simpleBoard(), {
       traffic: READS,
       events: [makeEvent(0, 'traffic_ramp', { toRps: 2000, durationSec: 10 })],
@@ -92,7 +92,7 @@ describe('traffic_ramp', () => {
 });
 
 describe('traffic_spike', () => {
-  test('multiplica o tráfego só durante a janela', () => {
+  test('multiplies traffic only during the window', () => {
     const config = makeConfig(simpleBoard(), {
       traffic: READS,
       events: [makeEvent(4, 'traffic_spike', { multiplier: 10, durationSec: 2 })],
@@ -108,7 +108,7 @@ describe('traffic_spike', () => {
 });
 
 describe('bot_wave', () => {
-  test('soma tráfego de bot durante a janela, sem mexer no legítimo', () => {
+  test('adds bot traffic during the window without touching legitimate traffic', () => {
     const config = makeConfig(simpleBoard(), {
       traffic: READS,
       events: [makeEvent(4, 'bot_wave', { rps: 500, durationSec: 2 })],
@@ -127,7 +127,7 @@ describe('bot_wave', () => {
 describe('node_failure', () => {
   const failure = makeEvent(4, 'node_failure', { nodeType: 'app_server', durationSec: 2 });
 
-  test('nó único fora do ar derruba tudo até voltar', () => {
+  test('a single node down takes everything down until it returns', () => {
     const run = runCollecting(makeConfig(simpleBoard(), { traffic: READS, events: [failure] }));
 
     expect(dropCount(run, 'node_down', { toSec: 4 })).toBe(0);
@@ -137,7 +137,7 @@ describe('node_failure', () => {
     expect(run.result.metrics.availability).toBe(0.8);
   });
 
-  test('com redundância atrás do load balancer a falha não gera erro', () => {
+  test('with redundancy behind the load balancer the failure causes no errors', () => {
     const run = runCollecting(makeConfig(redundantBoard(), { traffic: READS, events: [failure] }));
 
     expect(run.result.metrics.errorRate).toBe(0);
@@ -145,7 +145,7 @@ describe('node_failure', () => {
     expect(flowCount(run, edgeId('lb', 'app2'), undefined, { fromSec: 4, toSec: 6 })).toBe(400);
   });
 
-  test('aceita alvo por nodeId e, sem durationSec, a falha é permanente', () => {
+  test('accepts a target by nodeId and, without durationSec, the failure is permanent', () => {
     const event = makeEvent(4, 'node_failure', { nodeId: 'db' });
 
     const run = runCollecting(makeConfig(simpleBoard(), { traffic: READS, events: [event] }));
@@ -153,7 +153,7 @@ describe('node_failure', () => {
     expect(dropCount(run, 'node_down', { fromSec: 4 })).toBe(1200);
   });
 
-  test('requisições no buffer do nó que cai são perdidas', () => {
+  test('requests in the buffer of a failing node are lost', () => {
     const board = makeBoard(
       [
         makeNode('src', 'traffic_source'),
@@ -175,7 +175,7 @@ describe('node_failure', () => {
 });
 
 describe('network_partition', () => {
-  test('corta a ligação entre dois nós durante a janela', () => {
+  test('cuts the link between two nodes during the window', () => {
     const event = makeEvent(4, 'network_partition', { fromId: 'app', toId: 'db', durationSec: 2 });
 
     const run = runCollecting(makeConfig(simpleBoard(), { traffic: READS, events: [event] }));
@@ -202,7 +202,7 @@ describe('client_retry', () => {
   }
   const traffic = { baseRps: 90, mix: makeMix({ write: 1 }) };
 
-  test('retry de escrita lenta que já foi gravada gera duplicateOps', () => {
+  test('retrying a slow write that was already stored produces duplicateOps', () => {
     const event = makeEvent(0, 'client_retry', { timeoutMs: 200, maxRetries: 1 });
 
     const result = runToEnd(makeConfig(slowPrimaryBoard(), { traffic, events: [event] }));
@@ -210,7 +210,7 @@ describe('client_retry', () => {
     expect(result.metrics.duplicateOps).toBeGreaterThan(0);
   });
 
-  test('sem retry não há duplicata', () => {
+  test('without retries there are no duplicates', () => {
     const result = runToEnd(makeConfig(slowPrimaryBoard(), { traffic }));
 
     expect(result.metrics.duplicateOps).toBe(0);
@@ -226,7 +226,7 @@ describe('client_retry', () => {
     expect(flowCount(storm, srcToApp)).toBeGreaterThan(flowCount(calm, srcToApp) * 1.5);
   });
 
-  test('escrita descartada que o retry consegue gravar não conta como perdida', () => {
+  test('a dropped write that a retry manages to store does not count as lost', () => {
     const event = makeEvent(0, 'client_retry', { timeoutMs: 10_000, maxRetries: 5 });
     const outage = makeEvent(2, 'node_failure', { nodeId: 'db', durationSec: 0.2 });
     const board = simpleBoard();
@@ -241,7 +241,7 @@ describe('client_retry', () => {
 });
 
 describe('disk_failure', () => {
-  test('fila perde os trabalhos guardados', () => {
+  test('the queue loses its stored jobs', () => {
     const board = makeBoard(
       [
         makeNode('src', 'traffic_source'),
@@ -266,7 +266,7 @@ describe('disk_failure', () => {
     expect(failed.metrics.lostWrites).toBeGreaterThan(400);
   });
 
-  test('primário perde as escritas ainda não sincronizadas (lossWindowMs)', () => {
+  test('the primary loses writes not yet synced (lossWindowMs)', () => {
     const event = makeEvent(5, 'disk_failure', { nodeType: 'db_primary', lossWindowMs: 1000, durationSec: 0 });
     const plainOutage = makeEvent(5, 'node_failure', { nodeType: 'db_primary', durationSec: 0 });
 
@@ -278,7 +278,7 @@ describe('disk_failure', () => {
 });
 
 describe('cache_flush', () => {
-  test('cache esfria, o banco recebe os misses e depois reaquece', () => {
+  test('the cache goes cold, the database takes the misses, then it warms up', () => {
     const board = makeBoard(
       [
         makeNode('src', 'traffic_source'),
@@ -304,8 +304,8 @@ describe('cache_flush', () => {
   });
 });
 
-describe('casos de borda dos eventos', () => {
-  test('cache_flush com warmupSec 0 ainda força misses no tick do flush', () => {
+describe('event edge cases', () => {
+  test('cache_flush with warmupSec 0 still forces misses on the flush tick', () => {
     const board = makeBoard(
       [
         makeNode('src', 'traffic_source'),
@@ -326,18 +326,18 @@ describe('casos de borda dos eventos', () => {
     expect(flowCount(run, edgeId('cache', 'db'))).toBe(20);
   });
 
-  test('duas falhas de disco no primário não contam a mesma escrita duas vezes', () => {
+  test('two disk failures on the primary do not count the same write twice', () => {
     const first = makeEvent(5, 'disk_failure', { nodeType: 'db_primary', lossWindowMs: 2000, durationSec: 0 });
     const second = makeEvent(5.5, 'disk_failure', { nodeType: 'db_primary', lossWindowMs: 2000, durationSec: 0 });
 
     const once = runToEnd(makeConfig(simpleBoard(), { traffic: WRITES, events: [first] }));
     const twice = runToEnd(makeConfig(simpleBoard(), { traffic: WRITES, events: [first, second] }));
 
-    // Entre as duas falhas só cabem 4 ticks de gravação (o tick da 1ª falha fica fora do ar) + o tick perdido na 2ª.
+    // Between the two failures only 4 write ticks fit (the tick of the 1st failure is down) + the tick lost in the 2nd.
     expect(twice.metrics.lostWrites - once.metrics.lostWrites).toBe(50);
   });
 
-  test('falha curta não encurta uma falha longa já em curso', () => {
+  test('a short failure does not shorten a long one in progress', () => {
     const long = makeEvent(1, 'node_failure', { nodeId: 'app', durationSec: 5 });
     const short = makeEvent(2, 'node_failure', { nodeId: 'app', durationSec: 1 });
 
@@ -346,17 +346,17 @@ describe('casos de borda dos eventos', () => {
     expect(dropCount(run, 'node_down')).toBe(5 * 200);
   });
 
-  test('escrita que esgota os retries conta como perdida, uma vez só', () => {
+  test('a write that runs out of retries counts as lost, only once', () => {
     const retry = makeEvent(0, 'client_retry', { timeoutMs: 10_000, maxRetries: 2 });
     const outage = makeEvent(2, 'node_failure', { nodeId: 'db' });
 
     const result = runToEnd(makeConfig(simpleBoard(), { traffic: WRITES, events: [retry, outage], durationSec: 4 }));
 
-    // Nascem 200 escritas com o banco fora; as 20 dos dois últimos ticks ainda têm retry pendente no fim.
+    // 200 writes are born with the database down; the 20 of the last two ticks still have a pending retry at the end.
     expect(result.metrics.lostWrites).toBe(180);
   });
 
-  test('fim da partição devolve o fluxo', () => {
+  test('the end of the partition restores the flow', () => {
     const event = makeEvent(4, 'network_partition', { fromId: 'db', toId: 'app', durationSec: 2 });
 
     const run = runCollecting(makeConfig(simpleBoard(), { traffic: READS, events: [event] }));
@@ -364,7 +364,7 @@ describe('casos de borda dos eventos', () => {
     expect(flowCount(run, edgeId('app', 'db'), undefined, { fromSec: 6, toSec: 7 })).toBe(200);
   });
 
-  test('traffic_ramp sem duração troca a taxa na hora', () => {
+  test('traffic_ramp without a duration changes the rate at once', () => {
     const event = makeEvent(2, 'traffic_ramp', { toRps: 1000 });
 
     const run = runCollecting(makeConfig(simpleBoard(), { traffic: READS, events: [event] }));
@@ -372,7 +372,7 @@ describe('casos de borda dos eventos', () => {
     expect(flowCount(run, edgeId('src', 'app'), undefined, { fromSec: 2, toSec: 3 })).toBe(1000);
   });
 
-  test('taxa baixa e fracionária por tick gera a contagem exata', () => {
+  test('a low, fractional rate per tick produces the exact count', () => {
     const run = runCollecting(makeConfig(simpleBoard(), { traffic: { baseRps: 3, mix: makeMix({ read: 1 }) } }));
 
     expect(flowCount(run, edgeId('src', 'app'))).toBe(30);

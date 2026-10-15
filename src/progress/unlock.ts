@@ -14,9 +14,9 @@ export interface LevelGate {
 
 export type LevelAccess =
   | { readonly status: 'open' }
-  /** Falta concluir outra fase antes. */
+  /** Another level must be completed first. */
   | { readonly status: 'locked'; readonly requires: string }
-  /** A fase anterior foi concluída, mas o intervalo de espera ainda não passou. */
+  /** The previous level is complete, but the waiting period has not passed yet. */
   | { readonly status: 'waiting'; readonly availableAt: string };
 
 function completedAt(levelId: string, progress: readonly LevelProgress[]): string | null {
@@ -24,9 +24,9 @@ function completedAt(levelId: string, progress: readonly LevelProgress[]): strin
 }
 
 /**
- * Fases abrem em ordem: cada uma exige a anterior concluída. Uma fase com regra
- * `unlock` exige também que passe `delayHours` desde a conclusão de `afterLevel`,
- * que é o que transforma a fase de revisão em teste de retenção.
+ * Levels open in order: each requires the previous one completed. A level with an
+ * `unlock` rule also requires `delayHours` to pass since `afterLevel` was completed,
+ * which is what turns the review level into a retention test.
  */
 export function levelAccess(
   levels: readonly LevelGate[],

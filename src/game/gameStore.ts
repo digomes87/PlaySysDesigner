@@ -13,14 +13,14 @@ interface GameState {
   readonly board: Board;
   readonly stage: Stage;
   readonly result: SimResult | null;
-  /** Pergunta da etapa atual, escolhida ao entrar nela para não trocar depois da resposta. */
+  /** Question of the current step, picked on entry so it does not change after the answer. */
   readonly question: Question | null;
   readonly hintsShown: number;
-  /** Última regra de montagem violada, para avisar o jogador. */
+  /** Last board rule violated, to warn the player. */
   readonly notice: BoardIssueCode | null;
-  /** Quantas vezes o diagnóstico já apareceu: muda a ordem das opções a cada vez. */
+  /** How many times the diagnosis has appeared: reshuffles the options each time. */
   readonly attempt: number;
-  /** `answers` é o histórico do jogador: decide qual pergunta de cada banco aparece. */
+  /** `answers` is the player's history: it decides which question of each pool appears. */
   begin(level: Level, answers: readonly Answer[]): void;
   goTo(stage: Stage): void;
   finishRun(result: SimResult, answers: readonly Answer[]): void;
@@ -43,7 +43,7 @@ function nextNodeId(board: Board, paletteId: string): string {
   return `${paletteId}-${sequence}`;
 }
 
-/** Máquina do loop de uma fase: prever -> montar -> rodar -> diagnosticar | justificar. */
+/** Loop state machine of a level: predict -> build -> run -> diagnose | justify. */
 export const useGameStore = create<GameState>((set, get) => ({
   level: null,
   board: EMPTY_BOARD,
@@ -76,7 +76,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({ result, stage: 'justify', question: pickQuestion(level.justifyQuestions, answers) });
       return;
     }
-    // A pergunta vem do banco da métrica que violou primeiro.
+    // The question comes from the pool of the metric that failed first.
     const metric = result.firstViolation?.metric;
     const question = metric ? pickQuestion(level.diagnoseQuestions[metric] ?? [], answers) : null;
     set({ result, question, stage: question ? 'diagnose' : 'build', attempt: attempt + 1 });
@@ -101,7 +101,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({ notice: 'duplicate_edge' });
       return;
     }
-    // Só rejeita o que a nova ligação causou: problemas antigos não impedem de continuar montando.
+    // Reject only what the new link caused: older problems do not block further building.
     const before = new Set(validateBoard(board).map((issue) => issue.code));
     const caused = validateBoard(candidate).find((issue) => !before.has(issue.code));
     if (caused) set({ notice: caused.code });

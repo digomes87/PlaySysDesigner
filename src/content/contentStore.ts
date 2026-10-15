@@ -5,13 +5,13 @@ import type { ContentIndex, Level } from './schema';
 interface ContentState {
   readonly status: 'idle' | 'loading' | 'ready' | 'error';
   readonly index: ContentIndex | null;
-  /** Na ordem do índice. */
+  /** In index order. */
   readonly levels: readonly Level[];
   readonly error: string | null;
   load(): Promise<void>;
 }
 
-/** O conteúdo é pequeno (quatro fases): baixa tudo de uma vez, em paralelo. */
+/** Content is small (four levels): download it all at once, in parallel. */
 export const useContentStore = create<ContentState>((set, get) => ({
   status: 'idle',
   index: null,

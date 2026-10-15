@@ -11,9 +11,9 @@ export type RouteResult<TTarget extends { readonly node: BoardNode }> =
   | { readonly ok: false; readonly reason: DropReason };
 
 /**
- * Escolhe a próxima saída para a requisição: entre as saídas que aceitam e estão
- * utilizáveis, fica com o grupo de maior prioridade para o tipo da requisição e
- * reveza (round-robin) só dentro dele. `cursor` guarda a vez de cada grupo, por tipo de requisição.
+ * Picks the next output for the request: among outputs that accept it and are
+ * usable, keeps the highest-priority group for the request type and
+ * rotates (round-robin) only inside it. `cursor` keeps each group's turn, per request type.
  */
 export function chooseRoute<TTarget extends { readonly node: BoardNode }>(
   req: SimRequest,
@@ -31,7 +31,7 @@ export function chooseRoute<TTarget extends { readonly node: BoardNode }>(
   const priorityOf = (link: OutputLink<TTarget>): number => BEHAVIORS[link.target.node.type].priority[req.kind];
   const top = usable.reduce((highest, link) => Math.max(highest, priorityOf(link)), Number.NEGATIVE_INFINITY);
   const group = usable.filter((link) => priorityOf(link) === top);
-  // Cada tipo de requisição tem a própria vez: os grupos podem ter membros diferentes.
+  // Each request type has its own turn: groups may have different members.
   const turnKey = `${req.kind}|${top}`;
   const turn = cursor.get(turnKey) ?? 0;
   const link = group[turn % group.length];

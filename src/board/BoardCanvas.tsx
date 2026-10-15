@@ -38,7 +38,7 @@ function nodeTitle(node: BoardNode, level: Level, i18n: I18n): string {
   return item && level.scaffolding.labels ? i18n.text(item.label) : i18n.m.components[node.type];
 }
 
-/** Com rótulos ligados o texto da peça já traz os números; sem eles, mostra a ficha crua. */
+/** With labels on, the component text already carries the numbers; without them, show the raw spec. */
 function nodeSpecs(node: BoardNode, level: Level, i18n: I18n): string[] {
   const fromPalette = node.paletteId !== undefined;
   if (fromPalette && level.scaffolding.labels) return [];
@@ -61,7 +61,7 @@ function toFlowNodes(board: Board, level: Level, i18n: I18n, previous: readonly 
 
 interface BoardCanvasProps {
   readonly level: Level;
-  /** Fora da etapa de montar o tabuleiro fica só para olhar. */
+  /** Outside the build step the board is read-only. */
   readonly editable: boolean;
 }
 
@@ -74,16 +74,16 @@ function Canvas({ level, editable }: BoardCanvasProps) {
   const [selectedEdges, setSelectedEdges] = useState<ReadonlySet<string>>(new Set());
   const { locale } = i18n;
 
-  // O tabuleiro do store é a fonte da verdade; aqui só se preserva o que é do React Flow (seleção, medidas).
+  // The store board is the source of truth; only React Flow's own state (selection, measurements) is kept here.
   useEffect(() => {
     setNodes((previous) => toFlowNodes(board, level, i18n, previous));
-    // `i18n` é um objeto novo a cada render; o que importa aqui é o idioma.
+    // `i18n` is a new object on every render; only the locale matters here.
   }, [board, level, locale]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void fitView(FIT_VIEW_OPTIONS), 60);
     return () => window.clearTimeout(timer);
-    // Reenquadra ao trocar de fase e sempre que entra ou sai uma peça, para nada ficar fora da vista.
+    // Refit on level change and whenever a component is added or removed, so nothing is out of view.
   }, [level.id, board.nodes.length, fitView]);
 
   const edges = useMemo<Edge[]>(

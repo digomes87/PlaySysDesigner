@@ -2,15 +2,15 @@ import { TICKS_PER_SEC, type ComponentBehavior } from '../types';
 import { PRIORITY, samePriority } from './shared';
 
 interface RateLimiterState {
-  /** Bots que ainda podem passar neste tick. */
+  /** Bots that may still pass this tick. */
   tokens: number;
 }
 
 const priority = samePriority(PRIORITY.rateLimiter);
 
 /**
- * Deixa passar até `limitRps` de bots e descarta o excedente. No MVP a
- * identificação é perfeita: tráfego legítimo nunca é barrado.
+ * Lets up to `limitRps` of bots through and drops the excess. In the MVP
+ * detection is perfect: legitimate traffic is never blocked.
  */
 export const rateLimiter: ComponentBehavior<RateLimiterState> = {
   priority,

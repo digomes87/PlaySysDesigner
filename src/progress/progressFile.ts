@@ -5,7 +5,7 @@ export class ProgressFileError extends Error {
     readonly reason: 'not_json' | 'wrong_format',
     options?: ErrorOptions,
   ) {
-    super(reason === 'not_json' ? 'O arquivo não é um JSON válido.' : 'O arquivo não é um progresso deste jogo.', options);
+    super(reason === 'not_json' ? 'The file is not valid JSON.' : 'The file is not a progress file for this game.', options);
     this.name = 'ProgressFileError';
   }
 }
@@ -14,7 +14,7 @@ export function serializeProgress(data: ProgressExport): string {
   return JSON.stringify(data, null, 2);
 }
 
-/** Lê um arquivo de progresso exportado. Arquivo vem de fora: valida antes de usar. */
+/** Reads an exported progress file. The file comes from outside: validate before use. */
 export function parseProgressFile(text: string): ProgressExport {
   let raw: unknown;
   try {

@@ -21,7 +21,7 @@ const slug = z.string().regex(/^[a-z0-9-]+$/);
 const text = z.string().trim().min(1);
 const seconds = z.number().min(0);
 
-/** Todo texto visível ao jogador existe nos dois idiomas; faltar um deles reprova o conteúdo. */
+/** Every player-facing text exists in both languages; missing one fails the content. */
 function localized(inner: z.ZodString = text) {
   return z.strictObject(Object.fromEntries(LOCALES.map((locale) => [locale, inner])) as Record<
     (typeof LOCALES)[number],
@@ -59,7 +59,7 @@ export const boardSchema = z.strictObject({
   edges: z.array(boardEdgeSchema),
 });
 
-/** Uma peça da paleta. O mesmo tipo pode aparecer em variantes (ex.: réplica rápida e réplica barata). */
+/** A palette component. The same type may come in variants (e.g. fast replica and cheap replica). */
 export const paletteItemSchema = z.strictObject({
   id: slug,
   type: componentTypeSchema,
@@ -75,7 +75,7 @@ export const trafficSchema = z
     keyspace: z.number().int().positive().optional(),
   })
   .refine((traffic) => Math.abs(traffic.mix.read + traffic.mix.write + traffic.mix.bot - 1) < 1e-9, {
-    message: 'O mix read + write + bot deve somar 1.',
+    message: 'The read + write + bot mix must add up to 1.',
     path: ['mix'],
   });
 
@@ -87,7 +87,7 @@ const nodeTarget = {
   count: z.number().int().positive().optional(),
 };
 
-/** Para adicionar um evento: crie o handler no motor e inclua o schema dos parâmetros nesta união. */
+/** To add an event: create the handler in the engine and add its params schema to this union. */
 export const eventSchema = z.discriminatedUnion('type', [
   z.strictObject({
     ...eventBase,
@@ -146,7 +146,7 @@ export const sloSchema = z
     value: z.union([z.number(), costTierSchema]),
   })
   .refine((slo) => (slo.metric === 'costTier') === (typeof slo.value === 'string'), {
-    message: 'costTier compara com low/mid/high; as outras métricas, com número.',
+    message: 'costTier compares against low/mid/high; other metrics against a number.',
     path: ['value'],
   });
 
@@ -160,16 +160,16 @@ export const questionSchema = z
       .min(3)
       .max(4),
     correctOptionId: slug,
-    /** Curta de propósito: aparece só depois da resposta. */
+    /** Short on purpose: shown only after the answer. */
     explanation: localized(text.max(EXPLANATION_MAX_CHARS)),
   })
   .superRefine((question, ctx) => {
     const ids = question.options.map((option) => option.id);
     if (new Set(ids).size !== ids.length) {
-      ctx.addIssue({ code: 'custom', message: 'Opções com id repetido.', path: ['options'] });
+      ctx.addIssue({ code: 'custom', message: 'Options with a repeated id.', path: ['options'] });
     }
     if (!ids.includes(question.correctOptionId)) {
-      ctx.addIssue({ code: 'custom', message: 'A resposta certa não está entre as opções.', path: ['correctOptionId'] });
+      ctx.addIssue({ code: 'custom', message: 'The correct answer is not among the options.', path: ['correctOptionId'] });
     }
   });
 
@@ -182,7 +182,7 @@ const levelShape = z.strictObject({
   id: slug,
   title: localizedText,
   briefing: z.strictObject({ text: localizedText, requirements: z.array(localizedText).min(1) }),
-  /** Conceitos trabalhados na fase. */
+  /** Concepts the level works on. */
   concepts: z.array(slug).min(1),
   initialBoard: boardSchema,
   availableComponents: z.array(paletteItemSchema).min(1),
@@ -192,17 +192,17 @@ const levelShape = z.strictObject({
   costBudget: z.strictObject({ low: z.number().positive(), mid: z.number().positive() }).optional(),
   durationSec: z.number().positive(),
   seed: z.number().int(),
-  /** Andaimes: rótulos nas peças, dicas disponíveis e conceitos da fase à mostra. */
+  /** Scaffolding: component labels, available hints and the level's concepts on display. */
   scaffolding: z.strictObject({ labels: z.boolean(), hints: z.boolean(), showConcepts: z.boolean() }),
   hints: z.array(localizedText).default([]),
-  /** Fase que só abre algum tempo depois de outra ser concluída. */
+  /** A level that opens only some time after another is completed. */
   unlock: z.strictObject({ afterLevel: slug, delayHours: z.number().min(0) }).optional(),
   /**
-   * Cada etapa tem um banco de perguntas: o jogo reveza entre elas, então errar e
-   * tentar de novo não repete a mesma pergunta.
+   * Each step has a question pool: the game rotates through it, so failing and
+   * retrying does not repeat the same question.
    */
   predictQuestions: questionPool,
-  /** Indexadas pela métrica cujo SLO foi violado. */
+  /** Keyed by the metric whose SLO was violated. */
   diagnoseQuestions: z.partialRecord(metricIdSchema, questionPool),
   justifyQuestions: questionPool,
 });
@@ -213,7 +213,7 @@ function checkBoard(level: LevelShape, ctx: z.RefinementCtx): Set<string> {
   const nodeIds = new Set<string>();
   level.initialBoard.nodes.forEach((node, index) => {
     if (nodeIds.has(node.id)) {
-      ctx.addIssue({ code: 'custom', message: `Nó repetido: ${node.id}`, path: ['initialBoard', 'nodes', index, 'id'] });
+      ctx.addIssue({ code: 'custom', message: `Repeated node: ${node.id}`, path: ['initialBoard', 'nodes', index, 'id'] });
     }
     nodeIds.add(node.id);
   });
@@ -223,7 +223,7 @@ function checkBoard(level: LevelShape, ctx: z.RefinementCtx): Set<string> {
     if (edgeIds.has(edge.id)) ctx.addIssue({ code: 'custom', message: `Aresta repetida: ${edge.id}`, path });
     edgeIds.add(edge.id);
     for (const end of [edge.from, edge.to]) {
-      if (!nodeIds.has(end)) ctx.addIssue({ code: 'custom', message: `Aresta aponta para nó inexistente: ${end}`, path });
+      if (!nodeIds.has(end)) ctx.addIssue({ code: 'custom', message: `Edge points to a missing node: ${end}`, path });
     }
   });
   return nodeIds;
@@ -233,18 +233,18 @@ function checkEvents(level: LevelShape, nodeIds: ReadonlySet<string>, ctx: z.Ref
   level.events.forEach((event, index) => {
     const path = ['events', index];
     if (event.atSec > level.durationSec) {
-      ctx.addIssue({ code: 'custom', message: 'Evento agendado depois do fim da fase.', path: [...path, 'atSec'] });
+      ctx.addIssue({ code: 'custom', message: 'Event scheduled after the end of the level.', path: [...path, 'atSec'] });
     }
     const params: Record<string, unknown> = event.params;
     const hasTarget = params.nodeId !== undefined || params.nodeType !== undefined;
     if (EVENTS_REQUIRING_TARGET.includes(event.type) && !hasTarget) {
-      ctx.addIssue({ code: 'custom', message: 'Informe nodeId ou nodeType.', path: [...path, 'params'] });
+      ctx.addIssue({ code: 'custom', message: 'Provide nodeId or nodeType.', path: [...path, 'params'] });
     }
-    // Eventos só podem citar por id peças do tabuleiro inicial: as do jogador não têm id conhecido.
+    // Events may reference by id only nodes of the initial board: the player's nodes have no known id.
     for (const key of ['nodeId', 'fromId', 'toId']) {
       const nodeId = params[key];
       if (typeof nodeId === 'string' && !nodeIds.has(nodeId)) {
-        ctx.addIssue({ code: 'custom', message: `Nó inexistente no tabuleiro inicial: ${nodeId}`, path: [...path, 'params', key] });
+        ctx.addIssue({ code: 'custom', message: `Node missing from the initial board: ${nodeId}`, path: [...path, 'params', key] });
       }
     }
   });
@@ -264,10 +264,10 @@ function checkQuestions(level: LevelShape, ctx: z.RefinementCtx): void {
     pool.forEach((question, index) => {
       const path = [...poolPath, index];
       if (!concepts.has(question.conceptId)) {
-        ctx.addIssue({ code: 'custom', message: `Conceito fora da fase: ${question.conceptId}`, path: [...path, 'conceptId'] });
+        ctx.addIssue({ code: 'custom', message: `Concept not in the level: ${question.conceptId}`, path: [...path, 'conceptId'] });
       }
       if (seenIds.has(question.id)) {
-        ctx.addIssue({ code: 'custom', message: `Pergunta com id repetido: ${question.id}`, path: [...path, 'id'] });
+        ctx.addIssue({ code: 'custom', message: `Question with a repeated id: ${question.id}`, path: [...path, 'id'] });
       }
       seenIds.add(question.id);
     });
@@ -276,7 +276,7 @@ function checkQuestions(level: LevelShape, ctx: z.RefinementCtx): void {
     if (question.options.length !== JUSTIFY_OPTION_COUNT) {
       ctx.addIssue({
         code: 'custom',
-        message: `A pergunta de justificativa tem exatamente ${JUSTIFY_OPTION_COUNT} opções.`,
+        message: `The justify question has exactly ${JUSTIFY_OPTION_COUNT} options.`,
         path: ['justifyQuestions', index, 'options'],
       });
     }
@@ -285,7 +285,7 @@ function checkQuestions(level: LevelShape, ctx: z.RefinementCtx): void {
     if (!level.diagnoseQuestions[slo.metric]) {
       ctx.addIssue({
         code: 'custom',
-        message: `Falta a pergunta de diagnóstico para ${slo.metric}.`,
+        message: `Missing the diagnose question for ${slo.metric}.`,
         path: ['slos', index, 'metric'],
       });
     }
@@ -300,12 +300,12 @@ export const levelSchema = levelShape.superRefine((level, ctx) => {
   const concepts = new Set(level.concepts);
   level.events.forEach((event, index) => {
     if (!concepts.has(event.conceptId)) {
-      ctx.addIssue({ code: 'custom', message: `Conceito fora da fase: ${event.conceptId}`, path: ['events', index, 'conceptId'] });
+      ctx.addIssue({ code: 'custom', message: `Concept not in the level: ${event.conceptId}`, path: ['events', index, 'conceptId'] });
     }
   });
   const paletteIds = level.availableComponents.map((item) => item.id);
   if (new Set(paletteIds).size !== paletteIds.length) {
-    ctx.addIssue({ code: 'custom', message: 'Peças da paleta com id repetido.', path: ['availableComponents'] });
+    ctx.addIssue({ code: 'custom', message: 'Palette components with a repeated id.', path: ['availableComponents'] });
   }
 });
 

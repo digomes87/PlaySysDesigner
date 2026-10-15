@@ -2,8 +2,8 @@ import type { EventHandler } from '../types';
 import { effectEndMs } from './params';
 
 /**
- * Falha de disco: além de sair do ar por `durationSec`, o nó perde o que guardava.
- * O que exatamente se perde é decidido pelo comportamento do componente.
+ * Disk failure: besides going down for `durationSec`, the node loses what it held.
+ * Exactly what is lost is up to the component's behaviour.
  */
 export const diskFailure: EventHandler = (event, ctx) => {
   const untilMs = effectEndMs(event, ctx.nowMs);

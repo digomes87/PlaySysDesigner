@@ -10,8 +10,8 @@ function hash(text: string): number {
 }
 
 /**
- * Embaralha sem alterar o original. A mesma chave dá a mesma ordem, então as
- * opções não pulam de lugar a cada render, mas mudam entre tentativas.
+ * Shuffles without changing the original. The same key gives the same order, so
+ * options do not jump around on every render, but they change between attempts.
  */
 export function shuffled<T>(items: readonly T[], key: string): T[] {
   const random = mulberry32(hash(key));

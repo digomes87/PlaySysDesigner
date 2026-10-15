@@ -8,7 +8,7 @@ function subscribe(onChange: () => void): () => void {
   return () => media.removeEventListener('change', onChange);
 }
 
-/** true quando o sistema pede menos movimento: o tabuleiro troca partículas por números. */
+/** true when the system asks for reduced motion: the board swaps particles for numbers. */
 export function useReducedMotion(): boolean {
   return useSyncExternalStore(
     subscribe,

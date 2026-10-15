@@ -19,7 +19,7 @@ function loadLevel(utilization: number): 'calm' | 'hot' | 'full' {
   return utilization >= HOT_UTILIZATION ? 'hot' : 'calm';
 }
 
-/** Uma peça no tabuleiro. Durante a simulação mostra utilização, fila e descartes do nó. */
+/** A component on the board. During the simulation it shows the node's utilization, backlog and drops. */
 export function ComponentNode({ id, data, selected }: NodeProps<ComponentFlowNode>) {
   const { m, percent } = useI18n();
   const runtime = useRunStore((state) => state.snapshot?.nodes[id]);

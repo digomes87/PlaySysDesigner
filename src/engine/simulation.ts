@@ -36,14 +36,14 @@ interface Pending {
   readonly enqueuedAtMs: number;
 }
 
-/** Estado de um nó durante a partida. Só o núcleo escreve aqui. */
+/** A node's state during the run. Only the core writes here. */
 interface Slot extends NodeRuntime {
   utilization: number;
   down: boolean;
   downUntilMs: number;
-  /** Requisições que o nó ainda pode processar neste tick. */
+  /** Requests the node can still process this tick. */
   budget: number;
-  /** Backlog no início do tick + chegadas do tick. */
+  /** Backlog at the start of the tick + arrivals during the tick. */
   demand: number;
   buffer: Pending[];
   readonly capacityPerTick: number;
@@ -70,20 +70,20 @@ function createSlot(node: BoardNode): Slot {
 function buildSlots(board: Board): Map<string, Slot> {
   const slots = new Map<string, Slot>();
   for (const node of board.nodes) {
-    if (slots.has(node.id)) throw new Error(`Tabuleiro inválido: id de nó repetido "${node.id}".`);
+    if (slots.has(node.id)) throw new Error(`Invalid board: repeated node id "${node.id}".`);
     slots.set(node.id, createSlot(node));
   }
   for (const edge of board.edges) {
     const from = slots.get(edge.from);
     const target = slots.get(edge.to);
-    if (!from) throw new Error(`Tabuleiro inválido: aresta "${edge.id}" sai de um nó inexistente "${edge.from}".`);
-    if (!target) throw new Error(`Tabuleiro inválido: aresta "${edge.id}" chega a um nó inexistente "${edge.to}".`);
+    if (!from) throw new Error(`Invalid board: edge "${edge.id}" leaves a missing node "${edge.from}".`);
+    if (!target) throw new Error(`Invalid board: edge "${edge.id}" reaches a missing node "${edge.to}".`);
     from.outputs.push({ edgeId: edge.id, target });
   }
   return slots;
 }
 
-/** Latência do nó: base / (1 - utilização), limitada a LATENCY_CEILING_FACTOR vezes a base. */
+/** Node latency: base / (1 - utilization), capped at LATENCY_CEILING_FACTOR times the base. */
 function nodeLatencyMs(slot: Slot): number {
   const base = slot.node.spec.baseLatencyMs;
   const ceiling = base * LATENCY_CEILING_FACTOR;
@@ -123,12 +123,12 @@ class SimulationRun implements Simulation {
 
   constructor(private readonly config: SimConfig) {
     const { mix } = config.traffic;
-    if (mix.read + mix.write + mix.bot <= 0) throw new Error('Tráfego inválido: o mix precisa somar mais que zero.');
+    if (mix.read + mix.write + mix.bot <= 0) throw new Error('Invalid traffic: the mix must add up to more than zero.');
 
     this.random = mulberry32(config.seed);
     this.slots = buildSlots(config.board);
     this.sources = [...this.slots.values()].filter((slot) => slot.node.type === 'traffic_source');
-    if (this.sources.length === 0) throw new Error('Tabuleiro inválido: falta um nó traffic_source.');
+    if (this.sources.length === 0) throw new Error('Invalid board: missing a traffic_source node.');
 
     this.traffic = new TrafficState(config.traffic);
     this.metrics = new MetricsCollector(boardCostTier(config.board, config.costBudget));
@@ -145,7 +145,7 @@ class SimulationRun implements Simulation {
   }
 
   step(): TickSnapshot {
-    if (this.isFinished()) throw new Error('A simulação já terminou.');
+    if (this.isFinished()) throw new Error('The simulation has already finished.');
     this.nowMs = this.tick * TICK_MS;
     this.flows = new Map();
     this.drops = new Map();
@@ -215,7 +215,7 @@ class SimulationRun implements Simulation {
     };
   }
 
-  // --- Fases do tick -------------------------------------------------------
+  // --- Tick phases ---------------------------------------------------------
 
   private recoverNodes(): void {
     for (const slot of this.slots.values()) {
@@ -236,7 +236,7 @@ class SimulationRun implements Simulation {
 
   private refillBudgets(): void {
     for (const slot of this.slots.values()) {
-      // A capacidade inteira que sobrou não acumula; só a fração passa para o próximo tick.
+      // Leftover whole capacity does not accumulate; only the fraction carries to the next tick.
       slot.budget = (slot.budget % 1) + slot.capacityPerTick;
       slot.demand = slot.buffer.length;
     }
@@ -269,7 +269,7 @@ class SimulationRun implements Simulation {
     }
 
     const arrivals = this.traffic.arrivalsAt(this.nowMs);
-    // Bots da onda chegam misturados ao tráfego base: quem chega primeiro no tick pega a capacidade.
+    // Wave bots arrive mixed with base traffic: whoever arrives first in the tick takes the capacity.
     let base = arrivals.base;
     let bots = arrivals.bots;
     while (base + bots > 0) {
@@ -300,7 +300,7 @@ class SimulationRun implements Simulation {
     return nodes;
   }
 
-  // --- Caminho de uma requisição ------------------------------------------
+  // --- Path of a request --------------------------------------------------
 
   private pickKind(): RequestKind {
     const { mix } = this.config.traffic;
@@ -342,7 +342,7 @@ class SimulationRun implements Simulation {
     return null;
   };
 
-  /** Além de no ar e alcançável, o alvo precisa ter folga agora (sem enfileirar). */
+  /** Besides being up and reachable, the target must have spare capacity now (no queueing). */
   private readonly blockedForDispatch = (link: OutputLink<Slot>): DropReason | null => {
     const blocked = this.blockedBy(link);
     if (blocked) return blocked;
@@ -436,7 +436,7 @@ class SimulationRun implements Simulation {
     if (req.kind === 'write') this.metrics.addLostWrites(1);
   }
 
-  /** O cliente reenvia no tick seguinte, com o mesmo opId. */
+  /** The client resends on the next tick, with the same opId. */
   private scheduleRetry(req: SimRequest): void {
     const id = this.nextRequestId;
     this.nextRequestId += 1;
@@ -453,7 +453,7 @@ class SimulationRun implements Simulation {
     bump(this.flows, `${edgeId}|${kind}`, () => ({ edgeId, kind, count: 1 }));
   }
 
-  // --- Alavancas dos eventos ----------------------------------------------
+  // --- Event levers -------------------------------------------------------
 
   private targets(params: EventParams): Slot[] {
     const { nodeId, nodeType, count } = params;
@@ -465,13 +465,13 @@ class SimulationRun implements Simulation {
       const limit = typeof count === 'number' ? count : 1;
       return [...this.slots.values()].filter((slot) => slot.node.type === nodeType).slice(0, limit);
     }
-    throw new Error('Evento sem alvo: informe "nodeId" ou "nodeType".');
+    throw new Error('Event without a target: provide "nodeId" or "nodeType".');
   }
 
   private failNode(nodeId: string, untilMs: number): void {
     const slot = this.slots.get(nodeId);
     if (!slot) return;
-    // Uma falha nova nunca encurta outra que já está em curso.
+    // A new failure never shortens one already in progress.
     slot.downUntilMs = slot.down ? Math.max(slot.downUntilMs, untilMs) : untilMs;
     slot.down = true;
     const lost = slot.buffer;
@@ -491,7 +491,7 @@ export function createSimulation(config: SimConfig): Simulation {
   return new SimulationRun(config);
 }
 
-/** Roda a partida inteira sem UI. */
+/** Runs the whole simulation without a UI. */
 export function runToEnd(config: SimConfig): SimResult {
   const simulation = createSimulation(config);
   while (!simulation.isFinished()) simulation.step();

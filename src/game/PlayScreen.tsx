@@ -114,7 +114,7 @@ interface DockProps {
   readonly levels: readonly Level[];
 }
 
-/** O que aparece sob o tabuleiro em cada etapa do loop. */
+/** What shows under the board at each loop step. */
 function Dock({ level, levels }: DockProps) {
   const { m } = useI18n();
   const stage = useGameStore((state) => state.stage);
@@ -199,7 +199,7 @@ function Session({ level, levels, index }: { readonly level: Level; readonly lev
     return () => useRunStore.getState().clear();
   }, [level]);
 
-  // Voltar a montar limpa o retrato da última simulação: o tabuleiro mudou, os números não valem mais.
+  // Going back to build clears the last run's snapshot: the board changed, the numbers no longer hold.
   useEffect(() => {
     if (stage === 'build') useRunStore.getState().clear();
   }, [stage]);

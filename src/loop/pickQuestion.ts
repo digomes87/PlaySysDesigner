@@ -2,9 +2,9 @@ import type { Question } from '../content/schema';
 import type { Answer } from '../progress/types';
 
 /**
- * Escolhe a pergunta do banco que o jogador viu há mais tempo; as nunca vistas
- * vêm primeiro, na ordem do conteúdo. Assim, errar e tentar de novo traz uma
- * pergunta diferente em vez de deixar decorar a resposta.
+ * Picks the pool question the player saw longest ago; never-seen ones
+ * come first, in content order. So failing and retrying brings a different
+ * question instead of letting the player memorise the answer.
  */
 export function pickQuestion(pool: readonly Question[], answers: readonly Answer[]): Question | null {
   const lastSeen = new Map<string, number>();

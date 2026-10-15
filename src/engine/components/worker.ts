@@ -2,8 +2,8 @@ import type { ComponentBehavior } from '../types';
 import { PRIORITY } from './shared';
 
 /**
- * Consome trabalhos da fila no ritmo de `capacityRps` e os leva ao banco.
- * Só recebe trabalho assíncrono: tráfego direto do cliente nunca é roteado para cá.
+ * Consumes queue jobs at `capacityRps` and takes them to the database.
+ * Receives only asynchronous work: direct client traffic is never routed here.
  */
 export const worker: ComponentBehavior<null> = {
   priority: { read: 0, write: PRIORITY.worker, bot: 0 },

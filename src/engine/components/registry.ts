@@ -10,8 +10,8 @@ import { trafficSource } from './trafficSource';
 import { worker } from './worker';
 
 /**
- * Mapa tipo -> comportamento. O tipo mapeado obriga a registrar um comportamento
- * para cada ComponentType: esquecer um tipo novo aqui é erro de compilação.
+ * Type -> behaviour map. The mapped type forces a behaviour for every
+ * ComponentType: forgetting a new type here is a compile error.
  */
 export const BEHAVIORS: { readonly [TType in ComponentType]: ComponentBehavior } = {
   traffic_source: trafficSource,

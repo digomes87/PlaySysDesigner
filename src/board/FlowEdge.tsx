@@ -4,17 +4,17 @@ import { useRunStore } from '../game/runStore';
 import { useReducedMotion } from './useReducedMotion';
 
 const MAX_PARTICLES_PER_KIND = 4;
-/** Precisa bater com a duração de `flow-travel` em board.css. */
+/** Must match the `flow-travel` duration in board.css. */
 const TRAVEL_SEC = 1.3;
 
-/** Cada tipo tem cor e forma próprias: a identidade não depende só da cor. */
+/** Each type has its own color and shape: identity does not rely on color alone. */
 const SHAPES: Readonly<Record<RequestKind, string>> = {
   read: 'M-3.2 0a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0',
   write: 'M-3 -3h6v6h-6z',
   bot: 'M0 -4L4 3.2H-4z',
 };
 
-/** Escala logarítmica: 1 partícula para pouco tráfego, 4 para milhares de rps. */
+/** Logarithmic scale: 1 particle for light traffic, 4 for thousands of rps. */
 function particleCount(perTick: number): number {
   if (perTick <= 0) return 0;
   return Math.min(MAX_PARTICLES_PER_KIND, 1 + Math.floor(Math.log10(perTick + 1) * 1.6));
@@ -24,13 +24,13 @@ function strokeWidth(totalPerTick: number): number {
   return 1.5 + Math.min(3, Math.log10(totalPerTick + 1));
 }
 
-/** Ligação entre duas peças. Durante a simulação, partículas mostram o tráfego que passa por ela. */
+/** Link between two components. During the simulation, particles show the traffic crossing it. */
 export function FlowEdge(props: EdgeProps) {
   const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, markerEnd } = props;
   const [path] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
   const reducedMotion = useReducedMotion();
   const isRunning = useRunStore((state) => state.status === 'running');
-  // Selector devolve texto: só re-renderiza quando a contagem da aresta muda.
+  // Selector returns text: re-renders only when the edge count changes.
   const counts = useRunStore((state) => {
     const flows = state.snapshot?.flows ?? [];
     return REQUEST_KINDS.map((kind) =>
