@@ -10,10 +10,10 @@ interface QuestionStepProps {
   readonly question: Question;
   readonly stage: LoopStage;
   readonly levelId: string;
-  /** Muda a ordem das opções; use um valor novo a cada vez que a pergunta reaparece. */
+  /** Changes the option order; pass a new value each time the question comes back. */
   readonly shuffleKey: string;
   readonly eyebrow: string;
-  /** Frase de contexto acima da pergunta; some depois da resposta para dar lugar à explicação. */
+  /** Context line above the question; hidden after the answer to make room for the explanation. */
   readonly lead?: string;
   readonly continueLabel: string;
   onContinue(): void;
@@ -22,8 +22,8 @@ interface QuestionStepProps {
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
 
 /**
- * Uma pergunta do loop. A explicação só aparece depois da resposta, e a resposta
- * é gravada na hora: é ela que alimenta o domínio do conceito.
+ * A loop question. The explanation appears only after the answer, and the answer
+ * is stored at once: it is what feeds the concept's mastery.
  */
 export function QuestionStep(props: QuestionStepProps) {
   const { question, stage, levelId, shuffleKey, eyebrow, lead, continueLabel, onContinue } = props;
@@ -34,7 +34,7 @@ export function QuestionStep(props: QuestionStepProps) {
   const answered = selected !== null;
   const isCorrect = selected === question.correctOptionId;
   const feedback = useRef<HTMLDivElement>(null);
-  // Depois da resposta só ficam a opção escolhida e a certa: sobra espaço para a explicação e o botão.
+  // After the answer only the chosen and the correct options remain: room for the explanation and the button.
   const visibleOptions = answered
     ? options.filter((option) => option.id === selected || option.id === question.correctOptionId)
     : options;

@@ -2,7 +2,7 @@ import type { Level } from '../content/schema';
 import { useI18n } from '../i18n/useI18n';
 import { SPEEDS, useRunStore } from './runStore';
 
-/** Controles da simulação e linha do tempo com os eventos da fase e as violações. */
+/** Simulation controls and a timeline with the level's events and violations. */
 export function RunBar({ level }: { readonly level: Level }) {
   const { m, number } = useI18n();
   const status = useRunStore((state) => state.status);

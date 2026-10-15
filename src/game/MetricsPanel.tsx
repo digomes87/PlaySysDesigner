@@ -18,14 +18,14 @@ function formatLimit(slo: Slo, i18n: I18n): string {
   return slo.op === 'lte' ? i18n.m.metrics.atMost(value) : i18n.m.metrics.atLeast(value);
 }
 
-/** Quanto do limite já foi consumido, de 0 a 1; null quando não faz sentido como barra. */
+/** How much of the limit is used, from 0 to 1; null when a bar makes no sense. */
 function consumed(slo: Slo, value: number | CostTier | undefined): number | null {
   if (typeof value !== 'number' || typeof slo.value !== 'number' || slo.op !== 'lte') return null;
   if (slo.value === 0) return value > 0 ? 1 : 0;
   return Math.min(1, value / slo.value);
 }
 
-/** Placar: um bloco por SLO da fase, com valor ao vivo, limite e estado. */
+/** Scoreboard: one block per level SLO, with live value, limit and status. */
 export function MetricsPanel({ level }: { readonly level: Level }) {
   const i18n = useI18n();
   const { m } = i18n;

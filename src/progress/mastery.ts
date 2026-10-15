@@ -1,7 +1,7 @@
 import type { Answer, Clock } from './types';
 
 export const REVIEW_INTERVALS_DAYS = [1, 3, 7, 16] as const;
-/** Tempo mínimo entre o primeiro acerto e o acerto em outro contexto para contar como domínio. */
+/** Minimum time between the first correct answer and a correct answer in another context to count as mastery. */
 export const MASTERY_MIN_GAP_DAYS = 3;
 export const MASTERY_MIN_CONTEXTS = 2;
 
@@ -12,15 +12,15 @@ export type ConceptState = 'new' | 'practicing' | 'mastered';
 export interface ConceptProgress {
   readonly conceptId: string;
   readonly state: ConceptState;
-  /** Intervalo de revisão em vigor; null enquanto o conceito nunca foi respondido. */
+  /** Current review interval; null while the concept was never answered. */
   readonly intervalDays: number | null;
   readonly nextReviewAt: string | null;
-  /** A revisão venceu: já passou de `nextReviewAt`. */
+  /** The review is due: `nextReviewAt` has passed. */
   readonly isDue: boolean;
   readonly correctCount: number;
   readonly totalCount: number;
   readonly lastAnsweredAt: string | null;
-  /** Fases em que o conceito já foi acertado. */
+  /** Levels where the concept was answered correctly. */
   readonly contexts: readonly string[];
 }
 
@@ -38,9 +38,9 @@ function byTime(a: Answer, b: Answer): number {
 }
 
 /**
- * Repetição espaçada. Errou: volta para 1 dia. Acertou com a revisão vencida (ou
- * na primeira resposta): avança um intervalo. Acertou antes da hora: nada muda,
- * senão responder duas perguntas na mesma sessão pularia intervalos.
+ * Spaced repetition. Wrong: back to 1 day. Right with the review due (or on the
+ * first answer): advance one interval. Right before it is due: nothing changes,
+ * otherwise answering two questions in the same session would skip intervals.
  */
 function schedule(answers: readonly Answer[]): Schedule | null {
   let current: Schedule | null = null;
@@ -58,9 +58,9 @@ function schedule(answers: readonly Answer[]): Schedule | null {
 }
 
 /**
- * Domínio por tempo real: acerto em pelo menos 2 fases diferentes, com pelo menos
- * 3 dias entre o primeiro acerto e um acerto em outra fase. Errar depois derruba
- * o domínio até o conceito ser acertado de novo.
+ * Mastery over real time: correct in at least 2 different levels, with at least
+ * 3 days between the first correct answer and a correct answer in another level.
+ * A later wrong answer revokes mastery until the concept is answered correctly again.
  */
 function isMastered(answers: readonly Answer[]): boolean {
   const correct = answers.filter((answer) => answer.correct);

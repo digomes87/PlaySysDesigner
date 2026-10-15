@@ -3,14 +3,14 @@ export type Locale = (typeof LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = 'en';
 
-/** Texto escrito em todos os idiomas do jogo. */
+/** Text written in every game language. */
 export type Localized = Readonly<Record<Locale, string>>;
 
 export function localize(text: Localized, locale: Locale): string {
   return text[locale];
 }
 
-/** Idioma inicial a partir da preferência do navegador: português para `pt*`, inglês para o resto. */
+/** Initial language from the browser preference: Portuguese for `pt*`, English otherwise. */
 export function detectLocale(preferred: readonly string[]): Locale {
   const first = preferred[0]?.toLowerCase() ?? '';
   return first.startsWith('pt') ? 'pt-BR' : DEFAULT_LOCALE;

@@ -7,7 +7,7 @@ interface ProgressState {
   readonly status: 'idle' | 'ready';
   readonly answers: readonly Answer[];
   readonly levels: readonly LevelProgress[];
-  /** O armazenamento do aparelho falhou: o progresso vale só até fechar a aba. */
+  /** Device storage failed: progress only lasts until the tab closes. */
   readonly storageFailed: boolean;
   load(): Promise<void>;
   recordAnswer(answer: Omit<Answer, 'at'>): Promise<void>;
@@ -27,9 +27,9 @@ function find(levels: readonly LevelProgress[], levelId: string): LevelProgress 
 }
 
 /**
- * Espelho em memória do repositório de progresso. A tela lê daqui; cada escrita vai
- * primeiro para a memória e depois para o aparelho, e uma falha de armazenamento
- * (ex.: navegação privada) não interrompe o jogo.
+ * In-memory mirror of the progress repository. The screen reads from here; each write
+ * goes to memory first and then to the device, so a storage failure
+ * (e.g. private browsing) does not interrupt the game.
  */
 export const useProgressStore = create<ProgressState>((set, get) => {
   async function persist(write: () => Promise<void>): Promise<void> {

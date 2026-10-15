@@ -1,6 +1,6 @@
 export type Random = () => number;
 
-/** mulberry32: PRNG pequeno e determinístico. Mesma seed, mesma sequência em [0, 1). */
+/** mulberry32: a small deterministic PRNG. Same seed, same sequence in [0, 1). */
 export function mulberry32(seed: number): Random {
   let state = seed >>> 0;
   return () => {

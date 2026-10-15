@@ -11,7 +11,7 @@ const COST_MARKS = { low: '$', mid: '$$', high: '$$$' } as const;
 const CLICK_COLUMNS = 4;
 const CLICK_SPACING = { x: 210, y: 130 };
 
-/** Onde cai uma peça adicionada por clique: em fileiras logo abaixo do sistema inicial. */
+/** Where a component added by click lands: in rows right below the initial system. */
 function nextFreePosition(board: Board): { x: number; y: number } {
   const initial = board.nodes.filter((node) => node.paletteId === undefined);
   const placed = board.nodes.length - initial.length;

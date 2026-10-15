@@ -45,7 +45,7 @@
   opacity: 0.35;
 }
 
-/* Peça */
+/* Component */
 .component-node {
   width: 176px;
   padding: var(--space-3);
@@ -176,7 +176,7 @@
   color: var(--color-critical-ink);
 }
 
-/* Ligações e partículas */
+/* Links and particles */
 .flow-edge.is-active .react-flow__edge-path {
   stroke: var(--color-line-strong);
 }
@@ -210,7 +210,7 @@
   fill: var(--color-bot);
 }
 
-/* Paleta */
+/* Palette */
 .palette__hint {
   margin-top: var(--space-2);
   font-size: var(--text-xs);

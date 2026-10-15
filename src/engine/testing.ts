@@ -15,7 +15,7 @@ import type {
 
 const HUGE_CAPACITY = 1_000_000;
 
-/** Specs folgadas: cada teste aperta só o que quer observar. */
+/** Loose specs: each test tightens only what it wants to observe. */
 const DEFAULT_SPECS: Readonly<Record<ComponentType, ComponentSpec>> = {
   traffic_source: { capacityRps: HUGE_CAPACITY, baseLatencyMs: 0, costTier: 'low', bufferSize: 0, params: {} },
   load_balancer: { capacityRps: HUGE_CAPACITY, baseLatencyMs: 1, costTier: 'low', bufferSize: 0, params: {} },
@@ -50,7 +50,7 @@ export function edgeId(from: string, to: string): string {
   return `${from}->${to}`;
 }
 
-/** Monta um tabuleiro; cada link `[de, para]` vira uma aresta com id `de->para`. */
+/** Builds a board; each link `[from, to]` becomes an edge with id `from->to`. */
 export function makeBoard(nodes: readonly BoardNode[], links: readonly (readonly [string, string])[]): Board {
   return {
     nodes,
@@ -99,7 +99,7 @@ function inRange(snapshot: TickSnapshot, { fromSec = 0, toSec = Infinity }: Tick
   return snapshot.timeSec >= fromSec && snapshot.timeSec < toSec;
 }
 
-/** Requisições que cruzaram a aresta, opcionalmente só de um tipo e num intervalo [fromSec, toSec). */
+/** Requests that crossed the edge, optionally of one type only and within [fromSec, toSec). */
 export function flowCount(run: Run, edge: string, kind?: RequestKind, range: TickRange = {}): number {
   return run.snapshots
     .filter((snapshot) => inRange(snapshot, range))

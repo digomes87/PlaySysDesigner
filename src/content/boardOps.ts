@@ -10,7 +10,7 @@ export function edgeIdFor(from: string, to: string): string {
   return `${from}->${to}`;
 }
 
-/** Cria um nó do tabuleiro a partir de uma peça da paleta. */
+/** Creates a board node from a palette component. */
 export function nodeFromPalette(item: PaletteItem, nodeId: string, position: Position): BoardNode {
   return { id: nodeId, type: item.type, spec: item.spec, position, paletteId: item.id };
 }
@@ -19,7 +19,7 @@ export function addNode(board: Board, node: BoardNode): Board {
   return { ...board, nodes: [...board.nodes, node] };
 }
 
-/** Remove o nó e as arestas ligadas a ele. Peça travada do sistema inicial não sai. */
+/** Removes the node and its edges. A locked component of the initial system stays. */
 export function removeNode(board: Board, nodeId: string): Board {
   const node = board.nodes.find((candidate) => candidate.id === nodeId);
   if (!node || node.locked) return board;
@@ -43,7 +43,7 @@ export function moveNode(board: Board, nodeId: string, position: Position): Boar
   return { ...board, nodes: board.nodes.map((node) => (node.id === nodeId ? { ...node, position } : node)) };
 }
 
-/** Quantas unidades de cada peça da paleta o jogador já colocou. */
+/** How many units of each palette component the player has placed. */
 export function countPlaced(board: Board, level: Level): Record<string, number> {
   const paletteIds = new Set(level.availableComponents.map((item) => item.id));
   const counts: Record<string, number> = {};

@@ -12,7 +12,7 @@ function browserLocale(): Locale {
 
 interface LocaleState {
   readonly locale: Locale;
-  /** Carrega a escolha salva no aparelho, se houver. */
+  /** Loads the choice saved on the device, if any. */
   restore(): Promise<void>;
   setLocale(locale: Locale): void;
 }
@@ -28,7 +28,7 @@ export const useLocaleStore = create<LocaleState>((set) => ({
       const { locale } = await progressRepository.getSettings();
       if (locale) set({ locale });
     } catch {
-      // Sem armazenamento disponível vale o idioma do navegador.
+      // Without storage the browser language applies.
     }
     applyToDocument(useLocaleStore.getState().locale);
   },
@@ -42,7 +42,7 @@ export const useLocaleStore = create<LocaleState>((set) => ({
 export interface I18n {
   readonly locale: Locale;
   readonly m: Messages;
-  /** Texto de conteúdo (fases, perguntas) no idioma atual. */
+  /** Content text (levels, questions) in the current language. */
   text(value: Localized): string;
   number(value: number, maximumFractionDigits?: number): string;
   percent(value: number, maximumFractionDigits?: number): string;

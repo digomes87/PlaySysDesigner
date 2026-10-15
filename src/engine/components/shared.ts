@@ -5,8 +5,8 @@ export type Priority = Readonly<Record<RequestKind, number>>;
 export const NO_PRIORITY: Priority = { read: 0, write: 0, bot: 0 };
 
 /**
- * Prioridades de roteamento. Camadas de passagem ficam acima dos dados; nos dados,
- * leitura prefere cache > réplica > primário e escrita prefere fila > primário.
+ * Routing priorities. Pass-through layers rank above data; within data,
+ * reads prefer cache > replica > primary and writes prefer queue > primary.
  */
 export const PRIORITY = {
   rateLimiter: 90,
@@ -23,7 +23,7 @@ export function samePriority(value: number): Priority {
   return { read: value, write: value, bot: value };
 }
 
-/** Componente sem estado que só repassa o tráfego síncrono adiante. */
+/** Stateless component that only forwards synchronous traffic. */
 export function passThrough(priority: Priority): ComponentBehavior<null> {
   return {
     priority,

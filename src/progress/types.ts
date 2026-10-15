@@ -4,9 +4,9 @@ import { LOCALES } from '../i18n/locales';
 export const LOOP_STAGES = ['predict', 'diagnose', 'justify'] as const;
 export type LoopStage = (typeof LOOP_STAGES)[number];
 
-const isoDate = z.string().refine((value) => !Number.isNaN(Date.parse(value)), { message: 'Data inválida.' });
+const isoDate = z.string().refine((value) => !Number.isNaN(Date.parse(value)), { message: 'Invalid date.' });
 
-/** Uma resposta a uma pergunta do loop. É o único dado de onde o domínio é derivado. */
+/** One answer to a loop question. The only data mastery is derived from. */
 export const answerSchema = z.object({
   conceptId: z.string().min(1),
   levelId: z.string().min(1),
@@ -22,16 +22,16 @@ export type Answer = z.infer<typeof answerSchema>;
 
 export const levelProgressSchema = z.object({
   levelId: z.string().min(1),
-  /** Quantas vezes a simulação foi rodada na fase. */
+  /** How many times the simulation was run in the level. */
   runs: z.number().int().min(0),
-  /** Primeira vez em que a fase foi concluída (venceu e justificou); null enquanto não. */
+  /** First time the level was completed (won and justified); null until then. */
   completedAt: isoDate.nullable(),
 });
 
 export type LevelProgress = z.infer<typeof levelProgressSchema>;
 
 export const settingsSchema = z.object({
-  /** null enquanto o jogador não escolheu: vale o idioma do navegador. */
+  /** null until the player chooses: the browser language applies. */
   locale: z.enum(LOCALES).nullable(),
 });
 
@@ -53,7 +53,7 @@ export const progressExportSchema = z.object({
 
 export type ProgressExport = z.infer<typeof progressExportSchema>;
 
-/** Relógio injetado: os testes avançam dias sem esperar. */
+/** Injected clock: tests advance days without waiting. */
 export interface Clock {
   now(): Date;
 }
@@ -61,8 +61,8 @@ export interface Clock {
 export const systemClock: Clock = { now: () => new Date() };
 
 /**
- * Fronteira de persistência. A UI só conhece esta interface, então trocar o
- * IndexedDB por uma implementação com sync remoto não mexe no resto do app.
+ * Persistence boundary. The UI only knows this interface, so swapping
+ * IndexedDB for a remote-sync implementation leaves the rest of the app untouched.
  */
 export interface ProgressRepository {
   recordAnswer(answer: Answer): Promise<void>;
@@ -72,7 +72,7 @@ export interface ProgressRepository {
   getSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<void>;
   exportAll(): Promise<ProgressExport>;
-  /** Substitui todo o progresso local pelo conteúdo importado. */
+  /** Replaces all local progress with the imported content. */
   importAll(data: ProgressExport): Promise<void>;
   clear(): Promise<void>;
 }

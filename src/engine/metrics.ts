@@ -10,13 +10,13 @@ import {
 const MAX_LATENCY_MS = 60_000;
 const WINDOW_TICKS = SLO_WINDOW_SEC * TICKS_PER_SEC;
 
-/** Histograma com resolução de 1 ms: percentil barato e amostras removíveis (janela deslizante). */
+/** Histogram with 1 ms resolution: cheap percentiles and removable samples (sliding window). */
 export class LatencyHistogram {
   private readonly counts = new Int32Array(MAX_LATENCY_MS + 1);
   private total = 0;
   private highest = 0;
 
-  /** `count` negativo remove amostras. */
+  /** A negative `count` removes samples. */
   add(latencyMs: number, count: number): void {
     const bucket = Math.min(MAX_LATENCY_MS, Math.max(0, Math.round(latencyMs)));
     this.counts[bucket] = (this.counts[bucket] ?? 0) + count;
@@ -47,8 +47,8 @@ function ratio(part: number, whole: number): number {
 }
 
 /**
- * Acumula o placar. p99 e errorRate existem em duas versões: da janela deslizante
- * (usada para SLO, devolvida por `endTick`) e da partida inteira (`totals`).
+ * Accumulates the scoreboard. p99 and errorRate come in two versions: the sliding window
+ * (used for SLOs, returned by `endTick`) and the whole run (`totals`).
  */
 export class MetricsCollector {
   private readonly totalLatency = new LatencyHistogram();
@@ -95,8 +95,8 @@ export class MetricsCollector {
   }
 
   /**
-   * Fecha o tick e devolve as métricas com p99/errorRate da janela corrente.
-   * Com menos de SLO_MIN_SAMPLES respostas na janela, os dois saem zerados.
+   * Closes the tick and returns the metrics with the current window's p99/errorRate.
+   * With fewer than SLO_MIN_SAMPLES responses in the window, both are zero.
    */
   endTick(): Metrics {
     const sample: TickSample = { ok: this.tickOk, errors: this.tickErrors, latencies: this.tickLatencies };

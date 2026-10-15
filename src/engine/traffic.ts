@@ -13,9 +13,9 @@ interface Timed<T> {
 }
 
 export interface TickArrivals {
-  /** Requisições do tráfego base neste tick; o tipo de cada uma sai do mix. */
+  /** Base-traffic requests this tick; each one's type comes from the mix. */
   readonly base: number;
-  /** Bots extras de ondas ativas. */
+  /** Extra bots from active waves. */
   readonly bots: number;
 }
 
@@ -23,7 +23,7 @@ function isActive(entry: Timed<unknown>, nowMs: number): boolean {
   return nowMs < entry.untilMs;
 }
 
-/** Estado do tráfego: taxa base, rampa, picos, ondas de bot e política de retry. */
+/** Traffic state: base rate, ramp, spikes, bot waves and retry policy. */
 export class TrafficState implements TrafficControl {
   private baseRps: number;
   private ramp: Ramp | null = null;
@@ -57,14 +57,14 @@ export class TrafficState implements TrafficControl {
     return this.retry && isActive(this.retry, nowMs) ? this.retry.value : null;
   }
 
-  /** Quantas requisições nascem neste tick. Frações acumulam para o tick seguinte. */
+  /** How many requests are born this tick. Fractions carry over to the next tick. */
   arrivalsAt(nowMs: number): TickArrivals {
     this.multipliers = this.multipliers.filter((entry) => isActive(entry, nowMs));
     this.botWaves = this.botWaves.filter((entry) => isActive(entry, nowMs));
     const multiplier = this.multipliers.reduce((product, entry) => product * entry.value, 1);
     const botRps = this.botWaves.reduce((sum, entry) => sum + entry.value, 0);
 
-    // O acumulado fica em "requisições por segundo": taxa inteira não sofre erro de ponto flutuante.
+    // The accumulator is in "requests per second": an integer rate suffers no floating-point error.
     this.baseCarry += this.currentBaseRps(nowMs) * multiplier;
     this.botCarry += botRps;
     const base = Math.floor(this.baseCarry / TICKS_PER_SEC);

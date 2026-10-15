@@ -4,7 +4,7 @@ const COST_POINTS: Readonly<Record<CostTier, number>> = { low: 1, mid: 2, high: 
 
 export const DEFAULT_COST_BUDGET: CostBudget = { low: 8, mid: 14 };
 
-/** Faixa de custo do tabuleiro: soma os pontos das peças e compara com o orçamento. */
+/** Board cost tier: adds up component points and compares them with the budget. */
 export function boardCostTier(board: Board, budget: CostBudget = DEFAULT_COST_BUDGET): CostTier {
   const points = board.nodes
     .filter((node) => node.type !== 'traffic_source')

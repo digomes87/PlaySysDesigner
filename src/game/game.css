@@ -27,12 +27,12 @@
   min-height: 0;
 }
 
-/* Dentro da tela da fase quem manda na altura é o grid: o tabuleiro encolhe para a pergunta caber. */
+/* On the level screen the grid owns the height: the board shrinks so the question fits. */
 .play__board .board {
   min-height: 0;
 }
 
-/* Etapas do loop */
+/* Loop steps */
 .stepper {
   display: flex;
   gap: var(--space-1);
@@ -66,7 +66,7 @@
   color: var(--color-signal);
 }
 
-/* Contexto */
+/* Context */
 .briefing {
   display: grid;
   gap: var(--space-5);
@@ -119,7 +119,7 @@
   color: var(--color-ink-soft);
 }
 
-/* Barras sob o tabuleiro */
+/* Bars under the board */
 .buildbar {
   display: flex;
   align-items: center;
@@ -244,7 +244,7 @@
   color: var(--color-critical-ink);
 }
 
-/* Perguntas e conclusão */
+/* Questions and completion */
 .dock {
   display: grid;
   gap: var(--space-4);
@@ -289,7 +289,7 @@
   }
 }
 
-/* Placar */
+/* Scoreboard */
 .scoreboard {
   display: grid;
   gap: var(--space-4);

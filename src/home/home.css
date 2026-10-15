@@ -31,7 +31,7 @@
   color: var(--color-ink-soft);
 }
 
-/* Trilho do loop: uma régua numerada, não um grid de cartões. */
+/* Loop track: a numbered ruler, not a grid of cards. */
 .loop-rail {
   display: grid;
   margin: 0;

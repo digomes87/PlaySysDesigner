@@ -7,7 +7,7 @@ import { BEHAVIORS } from './registry';
 
 const FAST_APP: SpecOverrides = { capacityRps: 100_000 };
 
-/** src -> app -> cache -> db, com escrita indo direto app -> db. */
+/** src -> app -> cache -> db, with writes going straight app -> db. */
 function cachedBoard(hitRate: number): Board {
   return makeBoard(
     [
@@ -25,7 +25,7 @@ function cachedBoard(hitRate: number): Board {
   );
 }
 
-/** src -> app -> réplica (leitura) e app -> primário (escrita). */
+/** src -> app -> replica (reads) and app -> primary (writes). */
 function replicatedBoard(replicationLagMs: number): Board {
   return makeBoard(
     [
@@ -42,7 +42,7 @@ function replicatedBoard(replicationLagMs: number): Board {
   );
 }
 
-/** src -> app -> fila -> worker -> primário. */
+/** src -> app -> queue -> worker -> primary. */
 function queuedBoard(options: { queueSize: number; workerRps: number; primaryRps: number }): Board {
   return makeBoard(
     [
@@ -62,7 +62,7 @@ function queuedBoard(options: { queueSize: number; workerRps: number; primaryRps
 }
 
 describe('registry', () => {
-  test('todo tipo de componente tem comportamento e prioridade para cada tipo de requisição', () => {
+  test('every component type has a behaviour and a priority for every request type', () => {
     for (const type of COMPONENT_TYPES) {
       for (const kind of REQUEST_KINDS) {
         expect(BEHAVIORS[type].priority[kind]).toBeTypeOf('number');
@@ -72,7 +72,7 @@ describe('registry', () => {
 });
 
 describe('cache', () => {
-  test('só a fração de misses chega ao banco', () => {
+  test('only the miss fraction reaches the database', () => {
     const run = runCollecting(
       makeConfig(cachedBoard(0.8), { traffic: { baseRps: 200, mix: makeMix({ read: 1 }) }, durationSec: 20 }),
     );
@@ -83,13 +83,13 @@ describe('cache', () => {
     expect(missRatio).toBeLessThan(0.23);
   });
 
-  test('hitRate 1 sem escritas nunca consulta o banco', () => {
+  test('hitRate 1 without writes never queries the database', () => {
     const run = runCollecting(makeConfig(cachedBoard(1), { traffic: { baseRps: 200, mix: makeMix({ read: 1 }) } }));
 
     expect(flowCount(run, edgeId('cache', 'db'))).toBe(0);
   });
 
-  test('escrita invalida a chave: a próxima leitura dela é miss', () => {
+  test('a write invalidates the key: its next read is a miss', () => {
     const traffic = { baseRps: 200, mix: makeMix({ read: 0.5, write: 0.5 }), keyspace: 1 };
 
     const run = runCollecting(makeConfig(cachedBoard(1), { traffic }));
@@ -98,13 +98,13 @@ describe('cache', () => {
     expect(run.result.metrics.staleReads).toBe(0);
   });
 
-  test('bot sempre fura o cache', () => {
+  test('bots always miss the cache', () => {
     const run = runCollecting(makeConfig(cachedBoard(1), { traffic: { baseRps: 100, mix: makeMix({ bot: 1 }) } }));
 
     expect(flowCount(run, edgeId('cache', 'db'), 'bot')).toBe(1000);
   });
 
-  test('alivia um banco saturado', () => {
+  test('relieves a saturated database', () => {
     const slowDb = (board: Board): Board => ({
       ...board,
       nodes: board.nodes.map((node) => (node.id === 'db' ? makeNode('db', 'db_primary', { capacityRps: 300, bufferSize: 100 }) : node)),
@@ -122,19 +122,19 @@ describe('cache', () => {
 describe('db_replica', () => {
   const traffic = { baseRps: 200, mix: makeMix({ read: 0.5, write: 0.5 }), keyspace: 10 };
 
-  test('leitura dentro da janela de lag após escrita conta como staleRead', () => {
+  test('a read within the lag window after a write counts as staleRead', () => {
     const result = runToEnd(makeConfig(replicatedBoard(500), { traffic }));
 
     expect(result.metrics.staleReads).toBeGreaterThan(0);
   });
 
-  test('sem lag não há leitura velha', () => {
+  test('without lag there are no stale reads', () => {
     const result = runToEnd(makeConfig(replicatedBoard(0), { traffic }));
 
     expect(result.metrics.staleReads).toBe(0);
   });
 
-  test('lag maior gera mais leituras velhas', () => {
+  test('more lag produces more stale reads', () => {
     const sparse = { ...traffic, keyspace: 1000 };
 
     const short = runToEnd(makeConfig(replicatedBoard(200), { traffic: sparse }));
@@ -143,7 +143,7 @@ describe('db_replica', () => {
     expect(long.metrics.staleReads).toBeGreaterThan(short.metrics.staleReads * 2);
   });
 
-  test('ler do primário nunca é velho', () => {
+  test('reading from the primary is never stale', () => {
     const board = makeBoard(
       [makeNode('src', 'traffic_source'), makeNode('app', 'app_server', FAST_APP), makeNode('db', 'db_primary')],
       [
@@ -157,7 +157,7 @@ describe('db_replica', () => {
     expect(result.metrics.staleReads).toBe(0);
   });
 
-  test('não aceita escrita', () => {
+  test('does not accept writes', () => {
     const board = makeBoard(
       [
         makeNode('src', 'traffic_source'),
@@ -180,7 +180,7 @@ describe('db_replica', () => {
 describe('queue + worker', () => {
   const traffic = { baseRps: 500, mix: makeMix({ write: 1 }) };
 
-  test('fila absorve o pico: cliente recebe ack rápido e nenhuma escrita se perde', () => {
+  test('the queue absorbs the spike: the client gets a fast ack and no write is lost', () => {
     const board = queuedBoard({ queueSize: 100_000, workerRps: 90, primaryRps: 100 });
 
     const result = runToEnd(makeConfig(board, { traffic }));
@@ -190,18 +190,18 @@ describe('queue + worker', () => {
     expect(result.metrics.p99LatencyMs).toBeLessThan(50);
   });
 
-  test('worker entrega ao primário no ritmo da própria capacidade', () => {
+  test('the worker delivers to the primary at its own capacity', () => {
     const board = queuedBoard({ queueSize: 100_000, workerRps: 90, primaryRps: 100 });
 
     const run = runCollecting(makeConfig(board, { traffic }));
 
-    // A fila despacha no começo do tick: o primeiro tick ainda não tem o que entregar.
+    // The queue dispatches at the start of the tick: the first tick has nothing to deliver yet.
     const delivered = 90 * 10 - 9;
     expect(flowCount(run, edgeId('w', 'db'))).toBe(delivered);
     expect(run.snapshots.at(-1)?.nodes.q?.queued).toBe(5000 - delivered);
   });
 
-  test('fila cheia descarta e perde escrita', () => {
+  test('a full queue drops and loses writes', () => {
     const board = queuedBoard({ queueSize: 100, workerRps: 90, primaryRps: 100 });
 
     const result = runToEnd(makeConfig(board, { traffic }));
@@ -209,7 +209,7 @@ describe('queue + worker', () => {
     expect(result.metrics.lostWrites).toBeGreaterThan(3000);
   });
 
-  test('worker mais rápido que o primário perde escrita já confirmada', () => {
+  test('a worker faster than the primary loses already acknowledged writes', () => {
     const board = queuedBoard({ queueSize: 100_000, workerRps: 300, primaryRps: 100 });
 
     const result = runToEnd(makeConfig(board, { traffic }));
@@ -218,7 +218,7 @@ describe('queue + worker', () => {
     expect(result.metrics.errorRate).toBe(0);
   });
 
-  test('fila sem worker só acumula', () => {
+  test('a queue without a worker only accumulates', () => {
     const board = makeBoard(
       [makeNode('src', 'traffic_source'), makeNode('app', 'app_server', FAST_APP), makeNode('q', 'queue')],
       [
@@ -252,7 +252,7 @@ describe('rate_limiter', () => {
   }
   const traffic = { baseRps: 400, mix: makeMix({ read: 0.5, bot: 0.5 }) };
 
-  test('descarta bots e deixa o tráfego legítimo passar sem erro', () => {
+  test('drops bots and lets legitimate traffic through without errors', () => {
     const run = runCollecting(makeConfig(limitedBoard(0), { traffic }));
 
     expect(flowCount(run, edgeId('rl', 'app'), 'bot')).toBe(0);
@@ -261,13 +261,13 @@ describe('rate_limiter', () => {
     expect(run.result.metrics.errorRate).toBe(0);
   });
 
-  test('deixa passar bots até limitRps', () => {
+  test('lets bots through up to limitRps', () => {
     const run = runCollecting(makeConfig(limitedBoard(50), { traffic }));
 
     expect(flowCount(run, edgeId('rl', 'app'), 'bot')).toBe(500);
   });
 
-  test('sem limiter, bots consomem a capacidade do app e derrubam leituras', () => {
+  test('without a limiter, bots eat the app capacity and bring reads down', () => {
     const board = makeBoard(
       [makeNode('src', 'traffic_source'), makeNode('app', 'app_server', { capacityRps: 250 }), makeNode('db', 'db_primary')],
       [

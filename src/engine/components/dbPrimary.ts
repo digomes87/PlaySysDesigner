@@ -1,7 +1,7 @@
 import type { ComponentBehavior } from '../types';
 import { PRIORITY, samePriority } from './shared';
 
-/** Por quanto tempo o primário lembra das gravações recentes (limite de `lossWindowMs`). */
+/** How long the primary remembers recent writes (upper bound of `lossWindowMs`). */
 const COMMIT_HISTORY_MS = 60_000;
 
 interface CommitBatch {
@@ -22,7 +22,7 @@ function rememberCommit(state: DbPrimaryState, nowMs: number): void {
   state.commits = [...state.commits.filter((batch) => batch.atMs >= nowMs - COMMIT_HISTORY_MS), { atMs: nowMs, count: 1 }];
 }
 
-/** Fonte da verdade: grava escritas e responde leituras sempre atualizadas. */
+/** Source of truth: stores writes and always answers reads with fresh data. */
 export const dbPrimary: ComponentBehavior<DbPrimaryState> = {
   priority: samePriority(PRIORITY.primary),
   createState: () => ({ commits: [] }),
@@ -41,7 +41,7 @@ export const dbPrimary: ComponentBehavior<DbPrimaryState> = {
     const isUnsynced = (batch: CommitBatch): boolean => batch.atMs >= ctx.nowMs - lossWindowMs;
     const unsynced = node.state.commits.filter(isUnsynced).reduce((sum, batch) => sum + batch.count, 0);
     ctx.addLostWrites(unsynced);
-    // O que já foi dado como perdido não pode ser contado de novo numa falha seguinte.
+    // What was already counted as lost must not be counted again on a later failure.
     node.state.commits = node.state.commits.filter((batch) => !isUnsynced(batch));
   },
 };
