@@ -27,7 +27,7 @@ jobs:
       - run: npm test
       - run: npm run build
         env:
-          # O Pages serve o site em /<nome-do-repo>/.
+          # Pages serves the site under /<repository-name>/.
           VITE_BASE: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v3
         with:
