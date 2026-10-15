@@ -49,6 +49,7 @@ export interface Messages {
     readonly time: (now: string, total: string) => string;
     readonly legend: string;
     readonly dropped: (count: number) => string;
+    readonly blocked: (count: number) => string;
     readonly queued: (count: number) => string;
     readonly down: string;
     readonly utilization: string;
@@ -178,6 +179,7 @@ export const ptBR: Messages = {
     time: (now, total) => `${now}s de ${total}s`,
     legend: 'Tráfego',
     dropped: (count) => `${count} descartadas`,
+    blocked: (count) => `${count} bloqueadas`,
     queued: (count) => `${count} na fila`,
     down: 'Fora do ar',
     utilization: 'Utilização',
