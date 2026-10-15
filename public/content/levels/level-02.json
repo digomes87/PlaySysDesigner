@@ -272,6 +272,52 @@
       "en": "A replica takes a while to receive each write. Whoever reads in that interval sees the old value."
     }
   ],
+  "solution": {
+    "add": [
+      {
+        "paletteId": "cache",
+        "nodeId": "cache-1",
+        "position": {
+          "x": 680,
+          "y": 120
+        }
+      },
+      {
+        "paletteId": "replica-near",
+        "nodeId": "replica-near-1",
+        "position": {
+          "x": 940,
+          "y": 40
+        }
+      },
+      {
+        "paletteId": "replica-near",
+        "nodeId": "replica-near-2",
+        "position": {
+          "x": 940,
+          "y": 200
+        }
+      }
+    ],
+    "connect": [
+      [
+        "app-1",
+        "cache-1"
+      ],
+      [
+        "app-2",
+        "cache-1"
+      ],
+      [
+        "cache-1",
+        "replica-near-1"
+      ],
+      [
+        "cache-1",
+        "replica-near-2"
+      ]
+    ]
+  },
   "predictQuestions": [
     {
       "id": "l2-predict",

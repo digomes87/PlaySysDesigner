@@ -310,6 +310,79 @@
     "showConcepts": true
   },
   "hints": [],
+  "solution": {
+    "add": [
+      {
+        "paletteId": "queue",
+        "nodeId": "queue-1",
+        "position": {
+          "x": 680,
+          "y": 460
+        }
+      },
+      {
+        "paletteId": "worker",
+        "nodeId": "worker-1",
+        "position": {
+          "x": 880,
+          "y": 440
+        }
+      },
+      {
+        "paletteId": "worker",
+        "nodeId": "worker-2",
+        "position": {
+          "x": 880,
+          "y": 560
+        }
+      },
+      {
+        "paletteId": "rate-limiter",
+        "nodeId": "rate-limiter-1",
+        "position": {
+          "x": 110,
+          "y": 100
+        }
+      }
+    ],
+    "removeEdges": [
+      "src->lb"
+    ],
+    "connect": [
+      [
+        "app-1",
+        "queue-1"
+      ],
+      [
+        "app-2",
+        "queue-1"
+      ],
+      [
+        "queue-1",
+        "worker-1"
+      ],
+      [
+        "queue-1",
+        "worker-2"
+      ],
+      [
+        "worker-1",
+        "db"
+      ],
+      [
+        "worker-2",
+        "db"
+      ],
+      [
+        "src",
+        "rate-limiter-1"
+      ],
+      [
+        "rate-limiter-1",
+        "lb"
+      ]
+    ]
+  },
   "predictQuestions": [
     {
       "id": "l3-predict",

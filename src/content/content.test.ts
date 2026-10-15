@@ -5,9 +5,10 @@ import { validateBoard } from '../engine/boardRules';
 import { runToEnd } from '../engine/simulation';
 import { LOCALES } from '../i18n/locales';
 import { countPlaced } from './boardOps';
-import { applyPlan, REFERENCE_SOLUTIONS, TRAPS } from './referenceSolutions';
+import { applyPlan, TRAPS } from './traps';
 import { contentIndexSchema, levelSchema, type Level, type Question } from './schema';
 import { buildSimConfig } from './simConfig';
+import { applySolution } from './solution';
 
 const CONTENT_DIR = join(process.cwd(), 'public', 'content');
 
@@ -65,7 +66,6 @@ describe('content index', () => {
 });
 
 describe.each(levels)('level $id', (level) => {
-  const solutionPlan = REFERENCE_SOLUTIONS[level.id];
 
   test('the initial board follows the building rules', () => {
     expect(validateBoard(level.initialBoard)).toEqual([]);
@@ -92,8 +92,7 @@ describe.each(levels)('level $id', (level) => {
   });
 
   test('the reference solution meets every SLO within the palette', () => {
-    if (!solutionPlan) throw new Error(`No reference solution for ${level.id}.`);
-    const board = applyPlan(level, solutionPlan);
+    const board = applySolution(level);
 
     const result = runToEnd(buildSimConfig(level, board));
 
@@ -107,8 +106,7 @@ describe.each(levels)('level $id', (level) => {
   });
 
   test('the solution plays out the same on every run', () => {
-    if (!solutionPlan) throw new Error(`No reference solution for ${level.id}.`);
-    const config = buildSimConfig(level, applyPlan(level, solutionPlan));
+    const config = buildSimConfig(level, applySolution(level));
 
     expect(runToEnd(config)).toEqual(runToEnd(config));
   });

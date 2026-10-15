@@ -3,8 +3,8 @@ import { addNode, connect, disconnect, nodeFromPalette } from './boardOps';
 import type { Level } from './schema';
 
 /**
- * Reference boards used only by the content tests: they prove every level
- * has a solution and that the wrong shortcuts fail for the expected reason.
+ * Wrong shortcuts used only by the content tests: they prove each one fails
+ * for the expected reason. The reference solutions live in the level content.
  * Nothing here is imported by the app.
  */
 export interface BoardPlan {
@@ -108,13 +108,6 @@ function level04(options: { replica: string; workers: number; limiter: boolean }
     ],
   };
 }
-
-export const REFERENCE_SOLUTIONS: Readonly<Record<string, BoardPlan>> = {
-  'level-01': level01(5),
-  'level-02': level02({ cache: true, replicas: ['replica-near', 'replica-near'] }),
-  'level-03': level03({ queue: true, workers: 2, limiter: true }),
-  'level-04': level04({ replica: 'replica-near', workers: 1, limiter: true }),
-};
 
 export interface Trap {
   readonly name: string;

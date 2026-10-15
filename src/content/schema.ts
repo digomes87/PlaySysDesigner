@@ -177,6 +177,15 @@ export type Question = z.infer<typeof questionSchema>;
 
 const questionPool = z.array(questionSchema).min(1);
 
+/** Changes that turn the initial board into one that meets every SLO. */
+export const solutionSchema = z.strictObject({
+  add: z.array(z.strictObject({ paletteId: slug, nodeId: slug, position: z.strictObject({ x: z.number(), y: z.number() }) })),
+  removeEdges: z.array(z.string().min(1)).default([]),
+  connect: z.array(z.tuple([slug, slug])).min(1),
+});
+
+export type Solution = z.infer<typeof solutionSchema>;
+
 const levelShape = z.strictObject({
   schemaVersion: z.literal(LEVEL_SCHEMA_VERSION),
   id: slug,
@@ -205,6 +214,8 @@ const levelShape = z.strictObject({
   /** Keyed by the metric whose SLO was violated. */
   diagnoseQuestions: z.partialRecord(metricIdSchema, questionPool),
   justifyQuestions: questionPool,
+  /** The reference board, shown to a player who keeps failing. */
+  solution: solutionSchema,
 });
 
 type LevelShape = z.infer<typeof levelShape>;
@@ -220,7 +231,7 @@ function checkBoard(level: LevelShape, ctx: z.RefinementCtx): Set<string> {
   const edgeIds = new Set<string>();
   level.initialBoard.edges.forEach((edge, index) => {
     const path = ['initialBoard', 'edges', index];
-    if (edgeIds.has(edge.id)) ctx.addIssue({ code: 'custom', message: `Aresta repetida: ${edge.id}`, path });
+    if (edgeIds.has(edge.id)) ctx.addIssue({ code: 'custom', message: `Repeated edge: ${edge.id}`, path });
     edgeIds.add(edge.id);
     for (const end of [edge.from, edge.to]) {
       if (!nodeIds.has(end)) ctx.addIssue({ code: 'custom', message: `Edge points to a missing node: ${end}`, path });
@@ -292,10 +303,35 @@ function checkQuestions(level: LevelShape, ctx: z.RefinementCtx): void {
   });
 }
 
+function checkSolution(level: LevelShape, initialIds: ReadonlySet<string>, ctx: z.RefinementCtx): void {
+  const paletteIds = new Set(level.availableComponents.map((item) => item.id));
+  const initialEdges = new Set(level.initialBoard.edges.map((edge) => edge.id));
+  const nodeIds = new Set(initialIds);
+  level.solution.add.forEach((entry, index) => {
+    const path = ['solution', 'add', index];
+    if (!paletteIds.has(entry.paletteId)) {
+      ctx.addIssue({ code: 'custom', message: `Not in the palette: ${entry.paletteId}`, path: [...path, 'paletteId'] });
+    }
+    if (nodeIds.has(entry.nodeId)) ctx.addIssue({ code: 'custom', message: `Repeated node: ${entry.nodeId}`, path: [...path, 'nodeId'] });
+    nodeIds.add(entry.nodeId);
+  });
+  level.solution.removeEdges.forEach((edgeId, index) => {
+    if (!initialEdges.has(edgeId)) {
+      ctx.addIssue({ code: 'custom', message: `Not an initial edge: ${edgeId}`, path: ['solution', 'removeEdges', index] });
+    }
+  });
+  level.solution.connect.forEach((link, index) => {
+    for (const end of link) {
+      if (!nodeIds.has(end)) ctx.addIssue({ code: 'custom', message: `Edge points to a missing node: ${end}`, path: ['solution', 'connect', index] });
+    }
+  });
+}
+
 export const levelSchema = levelShape.superRefine((level, ctx) => {
   const nodeIds = checkBoard(level, ctx);
   checkEvents(level, nodeIds, ctx);
   checkQuestions(level, ctx);
+  checkSolution(level, nodeIds, ctx);
 
   const concepts = new Set(level.concepts);
   level.events.forEach((event, index) => {
@@ -320,7 +356,7 @@ export const contentIndexSchema = z
   .superRefine((index, ctx) => {
     for (const key of ['concepts', 'levels'] as const) {
       const ids = index[key].map((entry) => entry.id);
-      if (new Set(ids).size !== ids.length) ctx.addIssue({ code: 'custom', message: 'Ids repetidos.', path: [key] });
+      if (new Set(ids).size !== ids.length) ctx.addIssue({ code: 'custom', message: 'Repeated ids.', path: [key] });
     }
   });
 
