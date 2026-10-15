@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import { addNode, connect, disconnect, moveNode, nodeFromPalette, removeNode, type Position } from '../content/boardOps';
 import type { Level, PaletteItem, Question } from '../content/schema';
+import { applySolution } from '../content/solution';
 import { validateBoard, type BoardIssueCode } from '../engine/boardRules';
 import type { Board, SimResult } from '../engine/types';
 import { pickQuestion } from '../loop/pickQuestion';
 import type { Answer } from '../progress/types';
 
-export type Stage = 'predict' | 'build' | 'run' | 'diagnose' | 'justify' | 'complete';
+export type Stage = 'predict' | 'build' | 'run' | 'diagnose' | 'justify' | 'complete' | 'solution';
+
+export const FAILED_RUNS_BEFORE_SOLUTION = 3;
 
 interface GameState {
   readonly level: Level | null;
@@ -20,6 +23,8 @@ interface GameState {
   readonly notice: BoardIssueCode | null;
   /** How many times the diagnosis has appeared: reshuffles the options each time. */
   readonly attempt: number;
+  /** The board on screen is the reference solution: a pass does not complete the level. */
+  readonly showingSolution: boolean;
   /** `answers` is the player's history: it decides which question of each pool appears. */
   begin(level: Level, answers: readonly Answer[]): void;
   goTo(stage: Stage): void;
@@ -31,10 +36,16 @@ interface GameState {
   unlink(edgeId: string): void;
   resetBoard(): void;
   showNextHint(): void;
+  showSolution(): void;
+  leaveSolution(): void;
   dismissNotice(): void;
 }
 
 const EMPTY_BOARD: Board = { nodes: [], edges: [] };
+
+export function isSolutionUnlocked(state: Pick<GameState, 'attempt'>): boolean {
+  return state.attempt >= FAILED_RUNS_BEFORE_SOLUTION;
+}
 
 function nextNodeId(board: Board, paletteId: string): string {
   const taken = new Set(board.nodes.map((node) => node.id));
@@ -53,6 +64,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   hintsShown: 0,
   notice: null,
   attempt: 0,
+  showingSolution: false,
 
   begin(level, answers) {
     set({
@@ -64,14 +76,19 @@ export const useGameStore = create<GameState>((set, get) => ({
       hintsShown: 0,
       notice: null,
       attempt: 0,
+      showingSolution: false,
     });
   },
   goTo(stage) {
     set({ stage, notice: null });
   },
   finishRun(result, answers) {
-    const { level, attempt } = get();
+    const { level, attempt, showingSolution } = get();
     if (!level) return;
+    if (showingSolution) {
+      set({ result, stage: 'solution', question: null });
+      return;
+    }
     if (result.passed) {
       set({ result, stage: 'justify', question: pickQuestion(level.justifyQuestions, answers) });
       return;
@@ -117,6 +134,16 @@ export const useGameStore = create<GameState>((set, get) => ({
   showNextHint() {
     const { level, hintsShown } = get();
     if (level) set({ hintsShown: Math.min(level.hints.length, hintsShown + 1) });
+  },
+  showSolution() {
+    const state = get();
+    if (!state.level || !isSolutionUnlocked(state)) return;
+    set({ board: applySolution(state.level), stage: 'run', showingSolution: true, notice: null });
+  },
+  leaveSolution() {
+    const { level } = get();
+    if (!level) return;
+    set({ board: level.initialBoard, stage: 'build', showingSolution: false, result: null, notice: null });
   },
   dismissNotice() {
     set({ notice: null });

@@ -17,7 +17,8 @@ Requires Node 22+.
 ```bash
 npm install
 npm run dev        # http://localhost:5173/PlaySysDesigner/
-npm test           # engine, content and progress tests (Vitest)
+npm test           # engine, content, progress and loop tests (Vitest)
+npm run test:e2e   # plays levels in Chromium (Playwright; first run: npx playwright install chromium)
 npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + production build in dist/
 npm run preview    # serve the build
@@ -25,7 +26,7 @@ npm run preview    # serve the build
 
 ## Publishing
 
-The workflow in `.github/workflows/deploy.yml` runs the tests, builds and publishes to GitHub Pages on every push to `main`.
+The workflow in `.github/workflows/deploy.yml` runs the tests, builds and publishes to GitHub Pages on every push to `main`. `.github/workflows/ci.yml` type-checks, tests, builds and runs the browser tests on every push and pull request to `main` and `develop`.
 
 Vite's `base` comes from `VITE_BASE`, which the workflow sets to `/<repo-name>/`. To publish under another path, run `VITE_BASE=/ npm run build`. Routes use `HashRouter`, so no `404.html` is needed.
 
@@ -38,6 +39,8 @@ Every level follows five steps, in this order. Only the third one is simulation;
 3. **Run** — traffic flows through the architecture; a scoreboard shows the metrics.
 4. **Diagnose** — if it failed, the game does not explain: it shows the metrics and asks for the cause. The explanation only comes after the answer.
 5. **Justify** — if it passed, it asks why it worked. This catches wins by trial and error.
+
+After three failed runs the board offers **Show solution**: it plays the reference solution so the player sees it working, then hands back the initial board. The level only counts once the player builds it.
 
 Every question is tied to a concept and feeds spaced repetition. Each step draws from a pool of questions and shows the one you saw longest ago, so failing and trying again brings a different question instead of letting you memorize the answer.
 
@@ -156,7 +159,7 @@ The measure of success is delayed retention, not stars.
 
 1. Create `public/content/levels/<id>.json` following `levelSchema` (`src/content/schema.ts`). Every player-facing string is an object with `pt-BR` and `en`.
 2. Register it in `public/content/index.json`.
-3. Add a reference solution, and the tempting shortcuts the level must reject, in `src/content/referenceSolutions.ts`.
+3. Add the reference solution to the level's `solution` field (components with their positions, edges to remove and edges to add), and the tempting shortcuts the level must reject to `src/content/traps.ts`.
 4. Run `npm test`. A test validates all published content against the schema and runs each level headless: the starting board must fail, the reference solution must pass, and each shortcut must fail on the metric it is meant to teach.
 
 ## Adding a component

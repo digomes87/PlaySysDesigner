@@ -41,6 +41,8 @@ export interface Messages {
     readonly run: string;
     readonly reset: string;
     readonly resetConfirm: string;
+    readonly showSolution: string;
+    readonly solutionConfirm: string;
     readonly speed: string;
     readonly skip: string;
     readonly pause: string;
@@ -85,6 +87,11 @@ export interface Messages {
     readonly failedLead: string;
     readonly passedTitle: string;
     readonly passedLead: string;
+  };
+  readonly solution: {
+    readonly title: string;
+    readonly lead: string;
+    readonly rebuild: string;
   };
   readonly complete: {
     readonly title: string;
@@ -171,6 +178,8 @@ export const ptBR: Messages = {
     run: 'Rodar simulação',
     reset: 'Recomeçar tabuleiro',
     resetConfirm: 'Voltar ao sistema inicial? As peças que você colocou serão removidas.',
+    showSolution: 'Ver solução',
+    solutionConfirm: 'Trocar o seu tabuleiro pela solução de referência e rodar a simulação? A fase só conta quando você montar a solução por conta própria.',
     speed: 'Velocidade',
     skip: 'Pular para o fim',
     pause: 'Pausar',
@@ -230,6 +239,11 @@ export const ptBR: Messages = {
     failedLead: 'Olhe o placar antes de responder. A explicação só aparece depois.',
     passedTitle: 'Todos os requisitos cumpridos',
     passedLead: 'Falta uma coisa: mostrar que não foi sorte.',
+  },
+  solution: {
+    title: 'Solução de referência',
+    lead: 'Este tabuleiro cumpre todos os requisitos. Repare onde cada peça entrou e por quê: a fase só conta quando você montar a solução por conta própria, a partir do sistema inicial.',
+    rebuild: 'Montar por conta própria →',
   },
   complete: {
     title: 'Fase concluída',
