@@ -192,6 +192,95 @@
       "en": "A server at exactly full capacity still answers, but slowly. Leave headroom."
     }
   ],
+  "solution": {
+    "add": [
+      {
+        "paletteId": "load-balancer",
+        "nodeId": "load-balancer-1",
+        "position": {
+          "x": 200,
+          "y": 200
+        }
+      },
+      {
+        "paletteId": "app-server",
+        "nodeId": "app-server-1",
+        "position": {
+          "x": 420,
+          "y": 0
+        }
+      },
+      {
+        "paletteId": "app-server",
+        "nodeId": "app-server-2",
+        "position": {
+          "x": 420,
+          "y": 100
+        }
+      },
+      {
+        "paletteId": "app-server",
+        "nodeId": "app-server-3",
+        "position": {
+          "x": 420,
+          "y": 300
+        }
+      },
+      {
+        "paletteId": "app-server",
+        "nodeId": "app-server-4",
+        "position": {
+          "x": 420,
+          "y": 400
+        }
+      }
+    ],
+    "removeEdges": [
+      "src->app-1"
+    ],
+    "connect": [
+      [
+        "src",
+        "load-balancer-1"
+      ],
+      [
+        "load-balancer-1",
+        "app-1"
+      ],
+      [
+        "load-balancer-1",
+        "app-server-1"
+      ],
+      [
+        "load-balancer-1",
+        "app-server-2"
+      ],
+      [
+        "load-balancer-1",
+        "app-server-3"
+      ],
+      [
+        "load-balancer-1",
+        "app-server-4"
+      ],
+      [
+        "app-server-1",
+        "db"
+      ],
+      [
+        "app-server-2",
+        "db"
+      ],
+      [
+        "app-server-3",
+        "db"
+      ],
+      [
+        "app-server-4",
+        "db"
+      ]
+    ]
+  },
   "predictQuestions": [
     {
       "id": "l1-predict",

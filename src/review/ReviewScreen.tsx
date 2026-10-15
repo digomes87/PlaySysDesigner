@@ -112,7 +112,7 @@ function DataSection() {
   );
 }
 
-/** Tela de progresso: o que foi retido, o que está vencido para revisão e onde praticar. */
+/** Progress screen: what was retained, what is due for review and where to practise. */
 export function ReviewScreen() {
   const { m, text } = useI18n();
   const index = useContentStore((state) => state.index);

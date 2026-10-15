@@ -86,7 +86,7 @@ export function App() {
     void useProgressStore.getState().load();
   }, []);
 
-  // HashRouter: as rotas funcionam no GitHub Pages sem precisar de 404.html.
+  // HashRouter: routes work on GitHub Pages without a 404.html.
   return (
     <HashRouter>
       <Header />

@@ -1,4 +1,4 @@
 import { PRIORITY, passThrough, samePriority } from './shared';
 
-/** Processa a requisição e a encaminha para a camada de dados ligada a ele. */
+/** Processes the request and forwards it to the data layer linked to it. */
 export const appServer = passThrough(samePriority(PRIORITY.appServer));

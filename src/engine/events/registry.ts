@@ -8,7 +8,7 @@ import { nodeFailure } from './nodeFailure';
 import { trafficRamp } from './trafficRamp';
 import { trafficSpike } from './trafficSpike';
 
-/** Mapa tipo -> handler. Evento novo sem handler aqui não compila. */
+/** Type -> handler map. A new event without a handler here does not compile. */
 export const EVENT_HANDLERS: { readonly [TType in SimEventType]: EventHandler } = {
   traffic_ramp: trafficRamp,
   traffic_spike: trafficSpike,

@@ -26,7 +26,7 @@ interface ProgressDb extends DBSchema {
   settings: { key: string; value: Settings };
 }
 
-/** Progresso só no aparelho, em IndexedDB. Tudo que entra ou sai passa pelo schema. */
+/** Device-only progress in IndexedDB. Everything in or out goes through the schema. */
 export class IdbProgressRepository implements ProgressRepository {
   private db: Promise<IDBPDatabase<ProgressDb>> | null = null;
 

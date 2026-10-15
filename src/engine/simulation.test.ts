@@ -3,7 +3,7 @@ import { createSimulation, runToEnd } from './simulation';
 import { edgeId, flowCount, makeBoard, makeConfig, makeEvent, makeMix, makeNode, runCollecting } from './testing';
 import { TICKS_PER_SEC, type Board } from './types';
 
-/** src -> app -> db, com o app como gargalo. */
+/** src -> app -> db, with the app as the bottleneck. */
 function singleServerBoard(appOverrides: Parameters<typeof makeNode>[2] = {}): Board {
   return makeBoard(
     [makeNode('src', 'traffic_source'), makeNode('app', 'app_server', appOverrides), makeNode('db', 'db_primary')],
@@ -23,7 +23,7 @@ function balancedBoard(serverCount: number): Board {
   );
 }
 
-describe('determinismo', () => {
+describe('determinism', () => {
   const board = makeBoard(
     [
       makeNode('src', 'traffic_source'),
@@ -43,7 +43,7 @@ describe('determinismo', () => {
     events: [makeEvent(3, 'traffic_spike', { multiplier: 3, durationSec: 2 })],
   });
 
-  test('mesma seed e mesmo tabuleiro dão a mesma partida, tick a tick', () => {
+  test('same seed and same board give the same run, tick by tick', () => {
     const first = runCollecting(config);
     const second = runCollecting(config);
 
@@ -57,13 +57,13 @@ describe('determinismo', () => {
     expect(second.snapshots).not.toEqual(first.snapshots);
   });
 
-  test('runToEnd dá o mesmo resultado que avançar passo a passo', () => {
+  test('runToEnd gives the same result as stepping through', () => {
     expect(runToEnd(config)).toEqual(runCollecting(config).result);
   });
 });
 
-describe('ciclo de vida', () => {
-  test('roda durationSec * 10 ticks e então termina', () => {
+describe('lifecycle', () => {
+  test('runs durationSec * 10 ticks and then finishes', () => {
     const simulation = createSimulation(makeConfig(singleServerBoard(), { durationSec: 3 }));
 
     let ticks = 0;
@@ -76,19 +76,19 @@ describe('ciclo de vida', () => {
     expect(() => simulation.step()).toThrow();
   });
 
-  test('recusa tabuleiro sem origem de tráfego', () => {
+  test('rejects a board without a traffic source', () => {
     const board = makeBoard([makeNode('app', 'app_server')], []);
 
     expect(() => createSimulation(makeConfig(board))).toThrow(/traffic_source/);
   });
 
-  test('recusa aresta que aponta para nó inexistente', () => {
-    const board = makeBoard([makeNode('src', 'traffic_source')], [['src', 'fantasma']]);
+  test('rejects an edge pointing to a missing node', () => {
+    const board = makeBoard([makeNode('src', 'traffic_source')], [['src', 'ghost']]);
 
-    expect(() => createSimulation(makeConfig(board))).toThrow(/fantasma/);
+    expect(() => createSimulation(makeConfig(board))).toThrow(/ghost/);
   });
 
-  test('descarta com no_route quando a requisição não tem para onde ir', () => {
+  test('drops with no_route when the request has nowhere to go', () => {
     const board = makeBoard([makeNode('src', 'traffic_source'), makeNode('app', 'app_server')], [['src', 'app']]);
 
     const result = runToEnd(makeConfig(board));
@@ -97,8 +97,8 @@ describe('ciclo de vida', () => {
   });
 });
 
-describe('saturação', () => {
-  test('latência segue base / (1 - utilização)', () => {
+describe('saturation', () => {
+  test('latency follows base / (1 - utilization)', () => {
     const board = makeBoard(
       [
         makeNode('src', 'traffic_source'),
@@ -117,7 +117,7 @@ describe('saturação', () => {
     expect(result.metrics.errorRate).toBe(0);
   });
 
-  test('latência bate no teto quando a utilização chega a 1', () => {
+  test('latency hits the ceiling when utilization reaches 1', () => {
     const board = singleServerBoard({ capacityRps: 500, baseLatencyMs: 10, bufferSize: 1000 });
 
     const result = runToEnd(makeConfig(board, { traffic: { baseRps: 500, mix: makeMix({ read: 1 }) } }));
@@ -126,7 +126,7 @@ describe('saturação', () => {
     expect(result.metrics.errorRate).toBe(0);
   });
 
-  test('acima da capacidade enfileira até bufferSize e descarta o resto', () => {
+  test('above capacity it queues up to bufferSize and drops the rest', () => {
     const board = singleServerBoard({ capacityRps: 500, bufferSize: 50 });
 
     const run = runCollecting(makeConfig(board, { traffic: { baseRps: 1000, mix: makeMix({ read: 1 }) } }));
@@ -137,7 +137,7 @@ describe('saturação', () => {
     expect(run.snapshots.at(-1)?.drops).toContainEqual({ nodeId: 'app', reason: 'saturated', count: 50 });
   });
 
-  test('buffer absorve um pico curto sem erro, ao custo de latência', () => {
+  test('the buffer absorbs a short spike without errors, at the cost of latency', () => {
     const board = singleServerBoard({ capacityRps: 500, bufferSize: 2000 });
     const config = makeConfig(board, {
       traffic: { baseRps: 300, mix: makeMix({ read: 1 }) },
@@ -150,7 +150,7 @@ describe('saturação', () => {
     expect(result.metrics.p99LatencyMs).toBeGreaterThan(500);
   });
 
-  test('escrita descartada por saturação conta como lostWrites', () => {
+  test('a write dropped by saturation counts as lostWrites', () => {
     const board = singleServerBoard({ capacityRps: 100, bufferSize: 10 });
 
     const result = runToEnd(makeConfig(board, { traffic: { baseRps: 500, mix: makeMix({ write: 1 }) } }));
@@ -159,8 +159,8 @@ describe('saturação', () => {
   });
 });
 
-describe('roteamento', () => {
-  test('load balancer reveza por igual entre app servers', () => {
+describe('routing', () => {
+  test('the load balancer rotates evenly across app servers', () => {
     const run = runCollecting(makeConfig(balancedBoard(4), { traffic: { baseRps: 400, mix: makeMix({ read: 1 }) } }));
 
     const perServer = [1, 2, 3, 4].map((index) => flowCount(run, edgeId('lb', `app${index}`)));
@@ -168,7 +168,7 @@ describe('roteamento', () => {
     expect(perServer).toEqual([1000, 1000, 1000, 1000]);
   });
 
-  test('escalar na horizontal atrás do load balancer elimina os erros', () => {
+  test('scaling out behind the load balancer removes the errors', () => {
     const traffic = { baseRps: 2000, mix: makeMix({ read: 1 }) };
 
     const alone = runToEnd(makeConfig(balancedBoard(1), { traffic }));
@@ -178,7 +178,7 @@ describe('roteamento', () => {
     expect(scaled.metrics.errorRate).toBe(0);
   });
 
-  test('leitura prefere cache a primário; escrita vai direto ao primário', () => {
+  test('reads prefer the cache over the primary; writes go straight to the primary', () => {
     const board = makeBoard(
       [
         makeNode('src', 'traffic_source'),
@@ -202,7 +202,7 @@ describe('roteamento', () => {
     expect(flowCount(run, edgeId('app', 'db'), 'write')).toBeGreaterThan(0);
   });
 
-  test('leitura prefere réplica a primário e reveza entre réplicas', () => {
+  test('reads prefer a replica over the primary and rotate between replicas', () => {
     const board = makeBoard(
       [
         makeNode('src', 'traffic_source'),
@@ -226,7 +226,7 @@ describe('roteamento', () => {
     expect(flowCount(run, edgeId('app', 'r2'))).toBe(1000);
   });
 
-  test('escrita prefere fila a primário', () => {
+  test('writes prefer the queue over the primary', () => {
     const board = makeBoard(
       [
         makeNode('src', 'traffic_source'),
@@ -250,7 +250,7 @@ describe('roteamento', () => {
     expect(flowCount(run, edgeId('app', 'q'))).toBe(500);
   });
 
-  test('ciclo no tabuleiro não trava a simulação', () => {
+  test('a cycle on the board does not hang the simulation', () => {
     const board = makeBoard(
       [makeNode('src', 'traffic_source'), makeNode('lb1', 'load_balancer'), makeNode('lb2', 'load_balancer')],
       [
@@ -274,7 +274,7 @@ describe('SLOs', () => {
   const ramp = makeEvent(0, 'traffic_ramp', { toRps: 2000, durationSec: 10 });
   const traffic = { baseRps: 200, mix: makeMix({ read: 1 }) };
 
-  test('falha e aponta a primeira violação quando um servidor não aguenta a rampa', () => {
+  test('fails and reports the first violation when one server cannot take the ramp', () => {
     const result = runToEnd(makeConfig(balancedBoard(1), { traffic, events: [ramp], slos, durationSec: 20 }));
 
     expect(result.passed).toBe(false);
@@ -284,7 +284,7 @@ describe('SLOs', () => {
     expect(result.violations.map((violation) => violation.metric).sort()).toEqual(['errorRate', 'p99LatencyMs']);
   });
 
-  test('passa quando a arquitetura cumpre todos os SLOs a partida inteira', () => {
+  test('passes when the architecture meets every SLO for the whole run', () => {
     const result = runToEnd(makeConfig(balancedBoard(5), { traffic, events: [ramp], slos, durationSec: 20 }));
 
     expect(result.passed).toBe(true);
@@ -292,7 +292,7 @@ describe('SLOs', () => {
     expect(result.firstViolation).toBeNull();
   });
 
-  test('custo do tabuleiro vira métrica e pode violar SLO', () => {
+  test('board cost becomes a metric and can violate an SLO', () => {
     const config = makeConfig(balancedBoard(5), {
       traffic,
       slos: [{ metric: 'costTier', op: 'lte', value: 'low' }],

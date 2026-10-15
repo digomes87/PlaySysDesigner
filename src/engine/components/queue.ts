@@ -1,12 +1,12 @@
 import type { ComponentBehavior, SimRequest } from '../types';
 import { PRIORITY } from './shared';
 
-/** Abaixo disto não compensa compactar o array de trabalhos já entregues. */
+/** Below this, compacting the array of delivered jobs is not worth it. */
 const COMPACT_THRESHOLD = 1024;
 
 interface QueueState {
   jobs: SimRequest[];
-  /** Índice do próximo trabalho a entregar; evita `shift` em fila grande. */
+  /** Index of the next job to deliver; avoids `shift` on a large queue. */
   head: number;
 }
 
@@ -21,9 +21,9 @@ function compact(state: QueueState): void {
 }
 
 /**
- * Fila durável. Confirma a escrita ao cliente na hora (ack) e guarda o trabalho;
- * a cada tick entrega aos workers ligados a ela o que eles conseguem pegar.
- * `bufferSize` é a profundidade máxima: fila cheia descarta.
+ * Durable queue. Acknowledges the write to the client at once and keeps the job;
+ * each tick it hands its linked workers as much as they can take.
+ * `bufferSize` is the maximum depth: a full queue drops.
  */
 export const queue: ComponentBehavior<QueueState> = {
   priority: { read: 0, write: PRIORITY.queue, bot: 0 },

@@ -1,4 +1,4 @@
 import { PRIORITY, passThrough, samePriority } from './shared';
 
-/** Reparte o tráfego entre as saídas iguais; o revezamento é do roteador. */
+/** Spreads traffic across equal outputs; the router handles the rotation. */
 export const loadBalancer = passThrough(samePriority(PRIORITY.loadBalancer));

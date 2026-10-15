@@ -17,7 +17,8 @@ Requer Node 22+.
 ```bash
 npm install
 npm run dev        # http://localhost:5173/PlaySysDesigner/
-npm test           # testes do motor, do conteúdo e do progresso (Vitest)
+npm test           # testes do motor, do conteúdo, do progresso e do loop (Vitest)
+npm run test:e2e   # joga as fases no Chromium (Playwright; na primeira vez: npx playwright install chromium)
 npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + build de produção em dist/
 npm run preview    # serve o build
@@ -25,7 +26,7 @@ npm run preview    # serve o build
 
 ## Como publicar
 
-O workflow `.github/workflows/deploy.yml` roda os testes, faz o build e publica no GitHub Pages a cada push na `main`.
+O workflow `.github/workflows/deploy.yml` roda os testes, faz o build e publica no GitHub Pages a cada push na `main`. O `.github/workflows/ci.yml` checa tipos, roda os testes, faz o build e roda os testes no navegador a cada push e pull request para `main` e `develop`.
 
 O `base` do Vite vem de `VITE_BASE`, que o workflow define como `/<nome-do-repo>/`. Para publicar em outro caminho, rode `VITE_BASE=/ npm run build`. As rotas usam `HashRouter`, então não é preciso `404.html`.
 
@@ -38,6 +39,8 @@ Cada fase segue cinco passos, nesta ordem. Só o terceiro é simulação; os out
 3. **Rodar** — o tráfego passa pela arquitetura; um placar mostra as métricas.
 4. **Diagnosticar** — se falhou, o jogo não explica: mostra as métricas e pergunta a causa. A explicação só vem depois da resposta.
 5. **Justificar** — se venceu, pergunta por que funcionou. Pega quem acertou por tentativa e erro.
+
+Depois de três execuções com falha, o tabuleiro oferece **Ver solução**: roda a solução de referência para o jogador vê-la funcionando e depois devolve o tabuleiro inicial. A fase só conta quando o jogador monta a solução.
 
 Cada pergunta é ligada a um conceito e alimenta a repetição espaçada. Cada etapa tem um banco de perguntas e mostra a que você viu há mais tempo: errar e tentar de novo traz uma pergunta diferente, em vez de deixar decorar a resposta.
 
@@ -156,7 +159,7 @@ A medida de sucesso é retenção atrasada, não estrelas.
 
 1. Crie `public/content/levels/<id>.json` seguindo o `levelSchema` (`src/content/schema.ts`). Todo texto visível ao jogador é um objeto com `pt-BR` e `en`.
 2. Registre a fase em `public/content/index.json`.
-3. Inclua uma solução de referência, e os atalhos tentadores que a fase precisa reprovar, em `src/content/referenceSolutions.ts`.
+3. Inclua a solução de referência no campo `solution` da fase (peças com posição, arestas a remover e arestas a criar) e os atalhos tentadores que a fase precisa reprovar em `src/content/traps.ts`.
 4. Rode `npm test`. Um teste valida todo o conteúdo publicado contra o schema e roda cada fase headless: o tabuleiro inicial precisa falhar, a solução de referência precisa passar, e cada atalho precisa reprovar na métrica que ele existe para ensinar.
 
 ## Como adicionar um componente

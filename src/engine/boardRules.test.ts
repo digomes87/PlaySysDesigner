@@ -12,7 +12,7 @@ function codes(board: Parameters<typeof validateBoard>[0]): string[] {
 }
 
 describe('validateBoard', () => {
-  test('aceita um tabuleiro bem formado', () => {
+  test('accepts a well-formed board', () => {
     const board = makeBoard(
       [src, lb, app1, app2],
       [
@@ -25,7 +25,7 @@ describe('validateBoard', () => {
     expect(validateBoard(board)).toEqual([]);
   });
 
-  test('origem do tráfego não pode repartir carga sozinha', () => {
+  test('the traffic source cannot spread load by itself', () => {
     const board = makeBoard(
       [src, app1, app2],
       [
@@ -37,16 +37,16 @@ describe('validateBoard', () => {
     expect(validateBoard(board)).toEqual([{ code: 'source_multiple_outputs', nodeId: 'src' }]);
   });
 
-  test('acusa tabuleiro sem origem de tráfego', () => {
+  test('flags a board without a traffic source', () => {
     expect(codes(makeBoard([app1], []))).toEqual(['missing_source']);
   });
 
-  test('acusa aresta para nó inexistente, laço, duplicata e aresta entrando na origem', () => {
+  test('flags an edge to a missing node, a self-loop, a duplicate and an edge into the source', () => {
     const board = makeBoard(
       [src, app1],
       [
         ['src', 'app1'],
-        ['app1', 'fantasma'],
+        ['app1', 'ghost'],
         ['app1', 'app1'],
         ['app1', 'src'],
         ['src', 'app1'],

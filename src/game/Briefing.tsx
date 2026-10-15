@@ -7,7 +7,7 @@ interface BriefingProps {
   readonly index: ContentIndex;
 }
 
-/** Coluna de contexto: missão, requisitos, conceitos e dicas, conforme os andaimes da fase. */
+/** Context column: mission, requirements, concepts and hints, per the level's scaffolding. */
 export function Briefing({ level, index }: BriefingProps) {
   const { m, text } = useI18n();
   const hintsShown = useGameStore((state) => state.hintsShown);

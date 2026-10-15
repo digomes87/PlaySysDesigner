@@ -2,8 +2,8 @@ import type { ComponentBehavior } from '../types';
 import { PRIORITY } from './shared';
 
 /**
- * Cópia só de leitura. Uma escrita leva `replicationLagMs` para chegar aqui:
- * ler a chave dentro dessa janela devolve o valor antigo (staleRead).
+ * Read-only copy. A write takes `replicationLagMs` to arrive here:
+ * reading the key within that window returns the old value (staleRead).
  */
 export const dbReplica: ComponentBehavior<null> = {
   priority: { read: PRIORITY.replica, write: 0, bot: PRIORITY.replica },

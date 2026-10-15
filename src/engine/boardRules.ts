@@ -15,9 +15,9 @@ export interface BoardIssue {
 }
 
 /**
- * Regras de montagem do tabuleiro, independentes da fase. A origem do tráfego só
- * pode ter uma saída: o cliente conhece um endereço, e repartir carga é trabalho
- * do load balancer.
+ * Board building rules, independent of the level. The traffic source may have only
+ * one output: the client knows one address, and spreading load is the load
+ * balancer's job.
  */
 export function validateBoard(board: Board): BoardIssue[] {
   const issues: BoardIssue[] = [];

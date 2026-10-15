@@ -12,7 +12,7 @@ import { useProgressStore } from '../progress/progressStore';
 import { systemClock } from '../progress/types';
 import { levelAccess } from '../progress/unlock';
 import { Briefing } from './Briefing';
-import { useGameStore, type Stage } from './gameStore';
+import { isSolutionUnlocked, useGameStore, type Stage } from './gameStore';
 import { MetricsPanel } from './MetricsPanel';
 import { RunBar } from './RunBar';
 import { useRunStore } from './runStore';
@@ -20,9 +20,19 @@ import './game.css';
 
 const STEPS = ['predict', 'build', 'run', 'diagnose', 'justify'] as const;
 
+const STEP_OF_STAGE: Readonly<Record<Stage, (typeof STEPS)[number]>> = {
+  predict: 'predict',
+  build: 'build',
+  run: 'run',
+  diagnose: 'diagnose',
+  justify: 'justify',
+  complete: 'justify',
+  solution: 'run',
+};
+
 function Stepper({ stage }: { readonly stage: Stage }) {
   const { m } = useI18n();
-  const current = stage === 'complete' ? 'justify' : stage;
+  const current = STEP_OF_STAGE[stage];
   return (
     <ol className="stepper">
       {STEPS.map((step, index) => (
@@ -35,28 +45,40 @@ function Stepper({ stage }: { readonly stage: Stage }) {
   );
 }
 
+/** Plays the board on screen; the store decides what follows from the result. */
+function startRun(level: Level): void {
+  const { board, finishRun } = useGameStore.getState();
+  useRunStore
+    .getState()
+    .start(buildSimConfig(level, board), (result) => finishRun(result, useProgressStore.getState().answers));
+}
+
 function BuildBar({ level }: { readonly level: Level }) {
   const { m, number } = useI18n();
   const notice = useGameStore((state) => state.notice);
   const lastViolation = useGameStore((state) => (state.result?.passed === false ? state.result.firstViolation : null));
-  const { goTo, finishRun, resetBoard } = useGameStore.getState();
+  const solutionUnlocked = useGameStore(isSolutionUnlocked);
+  const { goTo, resetBoard, showSolution } = useGameStore.getState();
 
   function run(): void {
-    const { board } = useGameStore.getState();
-    const issue = validateBoard(board)[0];
+    const issue = validateBoard(useGameStore.getState().board)[0];
     if (issue) {
       useGameStore.setState({ notice: issue.code });
       return;
     }
     goTo('run');
     void useProgressStore.getState().recordRun(level.id);
-    useRunStore
-      .getState()
-      .start(buildSimConfig(level, board), (result) => finishRun(result, useProgressStore.getState().answers));
+    startRun(level);
   }
 
   function reset(): void {
     if (window.confirm(m.play.resetConfirm)) resetBoard();
+  }
+
+  function playSolution(): void {
+    if (!window.confirm(m.play.solutionConfirm)) return;
+    showSolution();
+    startRun(level);
   }
 
   return (
@@ -71,6 +93,11 @@ function BuildBar({ level }: { readonly level: Level }) {
             {m.play.lastRun(m.metrics.names[lastViolation.metric], number(lastViolation.atSec, 1))}
           </p>
         )
+      )}
+      {solutionUnlocked && (
+        <button type="button" className="button button--ghost" onClick={playSolution}>
+          {m.play.showSolution}
+        </button>
       )}
       <button type="button" className="button button--ghost" onClick={reset}>
         ↺ {m.play.reset}
@@ -109,12 +136,27 @@ function CompleteCard({ level, levels }: { readonly level: Level; readonly level
   );
 }
 
+function SolutionCard() {
+  const { m } = useI18n();
+  return (
+    <section className="complete">
+      <p className="eyebrow">{m.solution.title}</p>
+      <p>{m.solution.lead}</p>
+      <div className="complete__actions">
+        <button type="button" className="button button--signal" onClick={() => useGameStore.getState().leaveSolution()}>
+          {m.solution.rebuild}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 interface DockProps {
   readonly level: Level;
   readonly levels: readonly Level[];
 }
 
-/** O que aparece sob o tabuleiro em cada etapa do loop. */
+/** What shows under the board at each loop step. */
 function Dock({ level, levels }: DockProps) {
   const { m } = useI18n();
   const stage = useGameStore((state) => state.stage);
@@ -124,6 +166,13 @@ function Dock({ level, levels }: DockProps) {
 
   if (stage === 'build') return <BuildBar level={level} />;
   if (stage === 'run') return <RunBar level={level} />;
+  if (stage === 'solution') {
+    return (
+      <div className="dock panel">
+        <SolutionCard />
+      </div>
+    );
+  }
   if (stage === 'complete') {
     return (
       <div className="dock panel">
@@ -199,7 +248,7 @@ function Session({ level, levels, index }: { readonly level: Level; readonly lev
     return () => useRunStore.getState().clear();
   }, [level]);
 
-  // Voltar a montar limpa o retrato da última simulação: o tabuleiro mudou, os números não valem mais.
+  // Going back to build clears the last run's snapshot: the board changed, the numbers no longer hold.
   useEffect(() => {
     if (stage === 'build') useRunStore.getState().clear();
   }, [stage]);

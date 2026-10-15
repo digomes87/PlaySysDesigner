@@ -11,7 +11,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const CONCEPT = 'caching';
 
-/** Relógio de teste: o tempo só anda quando o teste manda. */
+/** Test clock: time only moves when the test says so. */
 class FakeClock implements Clock {
   private ms = START;
 
@@ -57,20 +57,20 @@ function freshRepository(clock: Clock = new FakeClock()): IdbProgressRepository 
   return new IdbProgressRepository(clock, `test-db-${dbCounter}`);
 }
 
-describe('repetição espaçada', () => {
-  test('conceito sem resposta é novo e não tem revisão marcada', () => {
+describe('spaced repetition', () => {
+  test('an unanswered concept is new and has no review scheduled', () => {
     const progress = deriveConcept(CONCEPT, [], new FakeClock());
 
     expect(progress).toMatchObject({ state: 'new', intervalDays: null, nextReviewAt: null, isDue: false });
   });
 
-  test('primeiro acerto marca revisão para 1 dia depois', () => {
+  test('the first correct answer schedules a review 1 day later', () => {
     const progress = deriveConcept(CONCEPT, [answer(0, true)], clockAt(0));
 
     expect(progress).toMatchObject({ state: 'practicing', intervalDays: 1, nextReviewAt: at(1), isDue: false });
   });
 
-  test('acertos nas revisões vencidas avançam 1, 3, 7 e 16 dias e param em 16', () => {
+  test('correct answers on due reviews advance 1, 3, 7 and 16 days and stop at 16', () => {
     const history = [answer(0, true), answer(1, true), answer(4, true), answer(11, true), answer(27, true)];
 
     const intervals = history.map((_, index) => deriveConcept(CONCEPT, history.slice(0, index + 1), clockAt(0)).intervalDays);
@@ -78,7 +78,7 @@ describe('repetição espaçada', () => {
     expect(intervals).toEqual([1, 3, 7, 16, 16]);
   });
 
-  test('erro volta o intervalo para 1 dia', () => {
+  test('a wrong answer resets the interval to 1 day', () => {
     const history = [answer(0, true), answer(1, true), answer(4, true), answer(11, false)];
 
     const progress = deriveConcept(CONCEPT, history, clockAt(11));
@@ -86,7 +86,7 @@ describe('repetição espaçada', () => {
     expect(progress).toMatchObject({ intervalDays: 1, nextReviewAt: at(12) });
   });
 
-  test('acerto antes da revisão vencer não avança o intervalo', () => {
+  test('a correct answer before the review is due does not advance the interval', () => {
     const sameSession = [answer(0, true), answer(0.01, true), answer(0.02, true)];
 
     const progress = deriveConcept(CONCEPT, sameSession, clockAt(0.02));
@@ -94,7 +94,7 @@ describe('repetição espaçada', () => {
     expect(progress).toMatchObject({ intervalDays: 1, nextReviewAt: at(1), correctCount: 3 });
   });
 
-  test('revisão vence quando o relógio passa de nextReviewAt', () => {
+  test('the review becomes due when the clock passes nextReviewAt', () => {
     const history = [answer(0, true)];
     const clock = new FakeClock();
 
@@ -105,7 +105,7 @@ describe('repetição espaçada', () => {
     expect([before, after]).toEqual([false, true]);
   });
 
-  test('a ordem em que as respostas foram gravadas não importa, só a data', () => {
+  test('the order answers were stored in does not matter, only their date', () => {
     const history = [answer(0, true), answer(1, true), answer(4, false)];
 
     const ordered = deriveConcept(CONCEPT, history, clockAt(5));
@@ -114,7 +114,7 @@ describe('repetição espaçada', () => {
     expect(shuffled).toEqual(ordered);
   });
 
-  test('respostas de outros conceitos não contam', () => {
+  test('answers to other concepts do not count', () => {
     const other = answer(0, true, 'level-02', { conceptId: 'rate-limiting' });
 
     const [caching, limiting] = deriveConcepts([CONCEPT, 'rate-limiting'], [other], clockAt(0));
@@ -124,8 +124,8 @@ describe('repetição espaçada', () => {
   });
 });
 
-describe('domínio', () => {
-  test('acertar em duas fases com 3 dias ou mais entre os acertos domina o conceito', () => {
+describe('mastery', () => {
+  test('correct in two levels 3 or more days apart masters the concept', () => {
     const history = [answer(0, true, 'level-02'), answer(3, true, 'level-04')];
 
     const progress = deriveConcept(CONCEPT, history, clockAt(3));
@@ -134,25 +134,25 @@ describe('domínio', () => {
     expect(progress.contexts).toEqual(['level-02', 'level-04']);
   });
 
-  test('acertar em duas fases com um dia de diferença ainda não é domínio', () => {
+  test('correct in two levels one day apart is not mastery yet', () => {
     const history = [answer(0, true, 'level-02'), answer(1, true, 'level-04')];
 
     expect(deriveConcept(CONCEPT, history, clockAt(1)).state).toBe('practicing');
   });
 
-  test('acertar várias vezes na mesma fase não é domínio, nem com dias de intervalo', () => {
+  test('correct many times in the same level is not mastery, even days apart', () => {
     const history = [answer(0, true), answer(1, true), answer(4, true), answer(11, true)];
 
     expect(deriveConcept(CONCEPT, history, clockAt(11)).state).toBe('practicing');
   });
 
-  test('o intervalo conta do primeiro acerto, não da primeira resposta', () => {
+  test('the interval counts from the first correct answer, not the first answer', () => {
     const history = [answer(0, false, 'level-02'), answer(2, true, 'level-02'), answer(4, true, 'level-04')];
 
     expect(deriveConcept(CONCEPT, history, clockAt(4)).state).toBe('practicing');
   });
 
-  test('errar depois derruba o domínio até acertar de novo', () => {
+  test('a later wrong answer revokes mastery until answered correctly again', () => {
     const mastered = [answer(0, true, 'level-02'), answer(3, true, 'level-04')];
 
     const slipped = deriveConcept(CONCEPT, [...mastered, answer(10, false, 'level-04')], clockAt(10));
@@ -163,7 +163,7 @@ describe('domínio', () => {
   });
 });
 
-describe('desbloqueio de fases', () => {
+describe('level unlocking', () => {
   const levels: LevelGate[] = [
     { id: 'level-01' },
     { id: 'level-02' },
@@ -172,18 +172,18 @@ describe('desbloqueio de fases', () => {
   ];
   const done = (levelId: string, days: number): LevelProgress => ({ levelId, runs: 1, completedAt: at(days) });
 
-  test('a primeira fase está sempre aberta', () => {
+  test('the first level is always open', () => {
     expect(levelAccess(levels, 'level-01', [], new FakeClock())).toEqual({ status: 'open' });
   });
 
-  test('cada fase exige a anterior concluída', () => {
+  test('each level requires the previous one completed', () => {
     const started: LevelProgress = { levelId: 'level-01', runs: 3, completedAt: null };
 
     expect(levelAccess(levels, 'level-02', [started], new FakeClock())).toEqual({ status: 'locked', requires: 'level-01' });
     expect(levelAccess(levels, 'level-02', [done('level-01', 0)], new FakeClock())).toEqual({ status: 'open' });
   });
 
-  test('a revisão espera 24 horas depois da fase 3', () => {
+  test('the review level waits 24 hours after level 3', () => {
     const progress = [done('level-01', 0), done('level-02', 0), done('level-03', 0)];
     const clock = new FakeClock();
 
@@ -198,13 +198,13 @@ describe('desbloqueio de fases', () => {
     expect(nextDay).toEqual({ status: 'open' });
   });
 
-  test('fase desconhecida fica trancada', () => {
+  test('an unknown level stays locked', () => {
     expect(levelAccess(levels, 'level-99', [], new FakeClock()).status).toBe('locked');
   });
 });
 
 describe('IdbProgressRepository', () => {
-  test('grava e lista respostas na ordem em que chegaram', async () => {
+  test('stores and lists answers in arrival order', async () => {
     const repository = freshRepository();
 
     await repository.recordAnswer(answer(0, true));
@@ -213,13 +213,13 @@ describe('IdbProgressRepository', () => {
     expect((await repository.listAnswers()).map((entry) => entry.correct)).toEqual([true, false]);
   });
 
-  test('recusa resposta fora do schema', async () => {
+  test('rejects an answer outside the schema', async () => {
     const repository = freshRepository();
 
     await expect(repository.recordAnswer(answer(0, true, 'level-02', { at: 'ontem' }))).rejects.toThrow();
   });
 
-  test('progresso de fase é substituído pelo mais recente', async () => {
+  test('level progress is replaced by the latest one', async () => {
     const repository = freshRepository();
 
     await repository.saveLevelProgress({ levelId: 'level-01', runs: 1, completedAt: null });
@@ -228,7 +228,7 @@ describe('IdbProgressRepository', () => {
     expect(await repository.listLevelProgress()).toEqual([{ levelId: 'level-01', runs: 2, completedAt: at(0) }]);
   });
 
-  test('configurações têm padrão e persistem', async () => {
+  test('settings have defaults and persist', async () => {
     const repository = freshRepository();
 
     const initial = await repository.getSettings();
@@ -238,7 +238,7 @@ describe('IdbProgressRepository', () => {
     expect(await repository.getSettings()).toEqual({ locale: 'pt-BR' });
   });
 
-  test('exportar e importar em outro aparelho preserva tudo', async () => {
+  test('exporting and importing on another device keeps everything', async () => {
     const source = freshRepository(clockAt(2));
     await source.recordAnswer(answer(0, true));
     await source.saveLevelProgress({ levelId: 'level-01', runs: 4, completedAt: at(1) });
@@ -257,7 +257,7 @@ describe('IdbProgressRepository', () => {
     });
   });
 
-  test('clear apaga respostas, fases e configurações', async () => {
+  test('clear deletes answers, levels and settings', async () => {
     const repository = freshRepository();
     await repository.recordAnswer(answer(0, true));
     await repository.saveLevelProgress({ levelId: 'level-01', runs: 1, completedAt: null });
@@ -271,16 +271,16 @@ describe('IdbProgressRepository', () => {
   });
 });
 
-describe('arquivo de progresso', () => {
-  test('recusa texto que não é JSON', () => {
-    expect(() => parseProgressFile('não é json')).toThrow(ProgressFileError);
+describe('progress file', () => {
+  test('rejects text that is not JSON', () => {
+    expect(() => parseProgressFile('not json')).toThrow(ProgressFileError);
   });
 
-  test('recusa JSON de outro formato', () => {
-    expect(() => parseProgressFile(JSON.stringify({ format: 'outro-jogo', version: 1 }))).toThrow(/deste jogo/);
+  test('rejects JSON of another format', () => {
+    expect(() => parseProgressFile(JSON.stringify({ format: 'another-game', version: 1 }))).toThrow(/progress file for this game/);
   });
 
-  test('nome do arquivo leva a data da exportação', () => {
+  test('the file name carries the export date', () => {
     expect(progressFileName(at(0))).toBe('playsysdesigner-progress-2026-01-01.json');
   });
 });

@@ -45,6 +45,8 @@ export const en: Messages = {
     run: 'Run simulation',
     reset: 'Reset board',
     resetConfirm: 'Go back to the starting system? The pieces you placed will be removed.',
+    showSolution: 'Show solution',
+    solutionConfirm: 'Replace your board with the reference solution and run it? The level only counts once you build the solution yourself.',
     speed: 'Speed',
     skip: 'Skip to the end',
     pause: 'Pause',
@@ -53,6 +55,7 @@ export const en: Messages = {
     time: (now, total) => `${now}s of ${total}s`,
     legend: 'Traffic',
     dropped: (count) => `${count} dropped`,
+    blocked: (count) => `${count} blocked`,
     queued: (count) => `${count} queued`,
     down: 'Down',
     utilization: 'Utilization',
@@ -103,6 +106,11 @@ export const en: Messages = {
     failedLead: 'Read the scoreboard before answering. The explanation only shows up afterwards.',
     passedTitle: 'Every requirement met',
     passedLead: 'One thing left: show it was not luck.',
+  },
+  solution: {
+    title: 'Reference solution',
+    lead: 'This board meets every requirement. Notice where each piece went and why: the level only counts once you build the solution yourself, starting from the initial system.',
+    rebuild: 'Build it yourself →',
   },
   complete: {
     title: 'Level complete',

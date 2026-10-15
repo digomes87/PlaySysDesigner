@@ -2,8 +2,8 @@ import type { EventHandler } from '../types';
 import { effectEndMs, optionalNumber, requireNumber } from './params';
 
 /**
- * Liga o retry do cliente: requisição que falha, ou que demora mais que
- * `timeoutMs`, é reenviada com o mesmo opId até `maxRetries` vezes.
+ * Turns on client retries: a request that fails, or takes longer than
+ * `timeoutMs`, is resent with the same opId up to `maxRetries` times.
  */
 export const clientRetry: EventHandler = (event, ctx) => {
   const policy = {
